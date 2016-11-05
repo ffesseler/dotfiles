@@ -24,7 +24,7 @@ brew 'jenv'
 brew 'jq'
 brew 'lua'
 brew 'python'
-brew 'macvim', args: ['with-lua']
+brew 'macvim', args: ['with-lua', 'with-override-system-vim']
 brew 'maven'
 brew 'mongodb'
 brew 'nvm'
@@ -62,7 +62,9 @@ cask 'mattermost'
 cask 'virtualbox'
 cask 'vlc'
 cask 'spectacle'
+cask 'steam'
 
 # Install Mac App Store apps
 mas 'irvue', id: 1039633667
 mas 'minimetro', id: 1047760200
+mas 'The Unarchiver', id: 425424353
