@@ -41,11 +41,18 @@ brew 'youtube-dl'
 brew 'homebrew/versions/node4-lts'
 brew 'tree'
 brew 'gradle'
+brew 'mas'
 
+# Quicklook
 cask 'betterzipql'
 cask 'qlcolorcode'
 cask 'qlimagesize'
 cask 'qlmarkdown'
+cask 'quicklook-json'
+cask 'quicklook-csv'
+cask 'qlstephen'
+
+# Apps
 cask 'aerial'
 cask 'alfred'
 cask 'evernote'
@@ -56,3 +63,6 @@ cask 'virtualbox'
 cask 'vlc'
 cask 'spectacle'
 
+# Install Mac App Store apps
+mas 'irvue', id: 1039633667
+mas 'minimetro', id: 1047760200
