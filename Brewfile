@@ -5,6 +5,7 @@ tap 'caskroom/versions'
 
 cask 'java'
 cask 'java7'
+cask 'elm-platform'
 
 brew 'asciidoc'
 brew 'cheat'
