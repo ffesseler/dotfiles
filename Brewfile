@@ -67,6 +67,7 @@ cask 'virtualbox'
 cask 'vlc'
 cask 'spectacle'
 cask 'steam'
+cask 'charles'
 
 # Install Mac App Store apps
 mas 'irvue', id: 1039633667
