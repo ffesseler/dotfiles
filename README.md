@@ -7,3 +7,4 @@
 3. ./install.sh
 4. ./symlinks.sh
 5. Modify Caps Lock key to "Ctrl" in Keyboard prefs
+6. Point iterm prefs to prefs in dotfiles
