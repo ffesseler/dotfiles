@@ -1,1 +1,8 @@
-# dotfiles
+# dotfiles 
+
+## Steps
+
+1. Copy .ssh keys
+2. Install XCode
+3. ./install.sh
+4. ./symlinks.sh
