@@ -17,3 +17,6 @@ cp dev2.conf ../dev2.conf
 # fish
 echo /usr/local/bin/fish | sudo tee -a /etc/shells
 chsh -s /usr/local/bin/fish
+rm -rf ~/.config/fish
+ln -s ~/dotfiles/.config/fish ~/.config/fish
+

@@ -6,7 +6,7 @@ set nocompatible
 filetype off
 
 " ================ Path ====================
-set path+=~/KapIT/iobeya/server/client-html/src/main/resources/client-html-src/src/app
+set path+=~/KapIT/iob/server/client-html/src/main/resources/client-html-src/src/app
 set suffixesadd+=.js
 
 " ================ General Config ====================
