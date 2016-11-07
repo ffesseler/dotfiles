@@ -70,6 +70,12 @@ cask 'vlc'
 cask 'spectacle'
 cask 'steam'
 cask 'charles'
+cask 'amazon-drive'
+cask 'gimp'
+cask 'sketch'
+cask 'intellij-idea'
+cask 'atom'
+
 
 # Install Mac App Store apps
 mas 'irvue', id: 1039633667
