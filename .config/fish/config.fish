@@ -7,6 +7,4 @@ set -x JENV_ROOT /usr/local/opt/jenv
 set -x NVM_DIR ~/.nvm
 source ~/.config/fish/nvm-wrapper/nvm.fish
 if test -f /Users/ffesseler/.autojump/share/autojump/autojump.fish; . /Users/ffesseler/.autojump/share/autojump/autojump.fish; end
-fundle plugin 'edc/bass'
-fundle init
 . $HOME/.config/fish/frontend-aliases.fish
