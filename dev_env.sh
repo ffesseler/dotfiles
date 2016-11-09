@@ -1,9 +1,10 @@
-#!/bin/
+#!/bin/sh
 
 # vim
 git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
-cp colors/Tomorrow-Night.vim ../.vim/colors
-cp colors/solarized.vim ../.vim/colors
+mkdir ~/.vim/colors
+cp colors/Tomorrow-Night.vim ../.vim/colors/
+cp colors/solarized.vim ../.vim/colors/
 vim +PluginInstall +qall
 
 # tmux
@@ -18,5 +19,5 @@ cp dev2.conf ../dev2.conf
 echo /usr/local/bin/fish | sudo tee -a /etc/shells
 chsh -s /usr/local/bin/fish
 rm -rf ~/.config/fish
-ln -s ~/dotfiles/.config/fish ~/.config/fish
+ln -s ~/dotfiles/.config/fish ~/.config
 
