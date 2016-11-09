@@ -162,7 +162,8 @@ echo "done"
 declare -a FILES_TO_SYMLINK=(
 
   'gitconfig'
-
+  'vimrc'
+  'tmux.conf'
 )
 
 # FILES_TO_SYMLINK="$FILES_TO_SYMLINK .vim bin" # add in vim and the binaries
