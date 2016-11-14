@@ -75,6 +75,7 @@ cask 'gimp'
 cask 'sketch'
 cask 'intellij-idea'
 cask 'atom'
+cask 'spideroakone'
 
 
 # Install Mac App Store apps
