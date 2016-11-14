@@ -26,7 +26,7 @@ brew 'jenv'
 brew 'jq'
 brew 'lua'
 brew 'python'
-brew 'macvim', args: ['with-lua', 'with-override-system-vim']
+brew 'macvim', args: ['with-lua', 'with-override-system-vim', 'without-python', 'with-python3']
 brew 'maven'
 brew 'mongodb'
 brew 'nvm'
