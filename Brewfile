@@ -82,3 +82,4 @@ cask 'spideroakone'
 mas 'irvue', id: 1039633667
 mas 'minimetro', id: 1047760200
 mas 'The Unarchiver', id: 425424353
+mas 'Microsoft Remote Desktop', id: 715768417
