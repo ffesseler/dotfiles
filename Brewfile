@@ -44,6 +44,7 @@ brew 'homebrew/versions/node4-lts'
 brew 'tree'
 brew 'gradle'
 brew 'mas'
+brew 'z'
 
 # Quicklook
 cask 'betterzipql'
