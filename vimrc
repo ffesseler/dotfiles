@@ -106,6 +106,7 @@ Plugin 'Shougo/neosnippet-snippets'
 Plugin 'othree/html5-syntax.vim'
 Plugin 'edkolev/tmuxline.vim'
 Plugin 'rhysd/committia.vim'
+Plugin 'AndrewRadev/linediff.vim'
 call vundle#end()  " required
 filetype plugin indent on  " required
 
