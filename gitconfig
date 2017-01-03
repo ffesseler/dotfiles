@@ -31,3 +31,5 @@
 	sslverify = false
 [url "https://"]
 	insteadOf = git://
+[push]
+	default = current
