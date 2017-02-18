@@ -45,6 +45,7 @@ brew 'tree'
 brew 'gradle'
 brew 'mas'
 brew 'z'
+brew 'lastpass-cli', args : ['with-pinentry', 'with-doc']
 
 # Quicklook
 cask 'betterzipql'
