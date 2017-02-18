@@ -78,7 +78,8 @@ cask 'sketch'
 cask 'intellij-idea'
 cask 'atom'
 cask 'spideroakone'
-
+cask 'wkhtmltopdf'
+cask 'postgres'
 
 # Install Mac App Store apps
 mas 'irvue', id: 1039633667
