@@ -20,6 +20,9 @@ set history=1000                "Store lots of cmd line history
 set gdefault                    "Always substitue globally
 set wildmenu                    "Display menu on autocomplete
 
+autocmd FileType gitcommit set textwidth=80
+autocmd FileType gitcommit set colorcolumn=81
+
 " This makes vim act like all other editors, buffers can
 " exist in the background without being in a window.
 " " http://items.sjbach.com/319/configuring-vim-right
