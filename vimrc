@@ -285,7 +285,7 @@ endfunc
 " vim:foldmethod=marker:foldlevel=0
 
 " https://gist.github.com/wellle/9289224
-nnoremap <silent> <Leader>a :set opfunc=Append<CR>g@ "append text inside text object
+nnoremap <silent> <Leader>p :set opfunc=Append<CR>g@ "append text inside text object
 nnoremap <silent> <Leader>i :set opfunc=Insert<CR>g@ "insert text inside text object
 
 function! Append(type, ...)
