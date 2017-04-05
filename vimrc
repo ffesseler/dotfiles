@@ -110,6 +110,13 @@ Plugin 'othree/html5-syntax.vim'
 Plugin 'edkolev/tmuxline.vim'
 Plugin 'rhysd/committia.vim'
 Plugin 'AndrewRadev/linediff.vim'
+Plugin 'jasonshell/vim-svg-indent'
+Plugin 'heavenshell/vim-jsdoc'
+Plugin 'elixir-lang/vim-elixir'
+Plugin 'junegunn/goyo.vim'
+Plugin 'tpope/vim-markdown'
+Plugin 'junegunn/vim-xmark'
+
 call vundle#end()  " required
 filetype plugin indent on  " required
 
@@ -137,6 +144,8 @@ autocmd BufWritePre * :%s/\s\+$//e
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
 autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
 autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
+
+autocmd BufNewFile,BufReadPost *.md set filetype=markdown
 
 " Open vimrc and autoreload config
 nnoremap <leader>v :e ~/.vimrc<CR>
@@ -206,11 +215,6 @@ omap ù [
 omap ` ]
 xmap ù [
 xmap ` ]
-
-" UltiSnip config
-let g:UltiSnipsListSnippets='<c-i>'
-vmap v <Plug>(expand_region_expand)
-vmap <C-v> <Plug>(expand_region_shrink)
 
 " html indentation
 let g:html_indent_script1 = "inc"
@@ -295,3 +299,11 @@ endfunction
 function! Insert(type, ...)
     call feedkeys("`[i", 'n')
 endfunction
+
+let g:jsdoc_allow_input_prompt = 1
+map K <Plug>(expand_region_expand)
+map J <Plug>(expand_region_shrink)
+
+" markdown handling
+let g:mardown_fenced_languages = ['javascript']
+autocmd! User GoyoLeave nested set bg=dark | colo Tomorrow-Night
