@@ -16,10 +16,10 @@ chmod u+x /usr/local/bin/tmux-up
 cp dev2.conf ../dev2.conf
 mkdir ~/.m2
 cp settings.xml ~/.m2/
+cp toolchains.xml ~/.m2/
 
 # fish
 echo /usr/local/bin/fish | sudo tee -a /etc/shells
 chsh -s /usr/local/bin/fish
 rm -rf ~/.config/fish
 ln -s ~/dotfiles/.config/fish ~/.config
-
