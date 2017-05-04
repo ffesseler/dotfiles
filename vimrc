@@ -58,6 +58,10 @@ nnoremap <C-H> <C-W><C-H>
 "C-A doesn't work to increment number
 noremap <C-I> <C-A>
 
+"Double tap i while in insert to go to the end of the line.
+inoremap ii <Esc>$a
+inoremap i; <Esc>$a;
+
 set splitright
 nnoremap ` '
 
