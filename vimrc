@@ -84,6 +84,7 @@ call vundle#begin() "let Vundle manage Vundle, required
 
 Plugin 'jiangmiao/auto-pairs'
 Plugin 'gmarik/Vundle.vim'
+Plugin 'https://github.com/kien/ctrlp.vim'
 Plugin 'rking/ag.vim'
 Plugin 'sjl/gundo.vim'
 Plugin 'scrooloose/syntastic'
@@ -119,7 +120,6 @@ Plugin 'elixir-lang/vim-elixir'
 Plugin 'junegunn/goyo.vim'
 Plugin 'tpope/vim-markdown'
 Plugin 'junegunn/vim-xmark'
-Plugin 'srstevenson/vim-picker'
 
 call vundle#end()  " required
 filetype plugin indent on  " required
@@ -189,6 +189,13 @@ vnoremap <Up> :m '<-2<CR>gv=gv
 " a selection without yanking it
 vmap r "_dP"
 " ============= Plugin Configuration ============
+
+" exclude directories from showing in ctrl p
+let g:ctrlp_custom_ignore = {
+    \ 'dir': '\.git$\|bower_components$\|node_modules$\|target$\|logs$\|log$'}
+let g:ctrlp_cmd = 'CtrlPMixed'
+let g:ctrlp_match_window = 'bottom,order:ttb'
+let g:ctrlp_working_path_mode = 0
 
 " ag config
 let g:ag_prg='ag -S --nocolor --nogroup --column --ignore node_modules --ignore target --ignore bower_components --ignore logs'
@@ -305,16 +312,8 @@ map J <Plug>(expand_region_shrink)
 let g:mardown_fenced_languages = ['javascript']
 autocmd! User GoyoLeave nested set bg=dark | colo Tomorrow-Night
 
-nmap <unique> <C-P>p <Plug>PickerEdit
-nmap <unique> <C-P>b <Plug>PickerBuffer
-
 " neosnippet
 let g:neocomplete#enable_at_startup = 1
 imap <C-k>     <Plug>(neosnippet_expand_or_jump)
 smap <C-k>     <Plug>(neosnippet_expand_or_jump)
 xmap <C-k>     <Plug>(neosnippet_expand_target)
-imap <expr><TAB>
- \ pumvisible() ? "\<C-n>" :
- \ neosnippet#expandable_or_jumpable() ?
- \    "\<Plug>(neosnippet_expand_or_jump)" : "\<TAB>"
-inoremap <expr><C-h> pumvisible() ? "\<C-y>" : "\<C-h>"
