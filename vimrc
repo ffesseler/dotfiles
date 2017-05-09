@@ -175,7 +175,7 @@ nnoremap <leader>V V`]
 nnoremap <leader>l :call ToggleNumber()<CR>
 
 " format json
-nmap =f :%!python -m json.tool<CR>
+nnoremap ,f :%!python -m json.tool<CR>
 " jj to switch to normal mode
 inoremap jj <Esc>
 
