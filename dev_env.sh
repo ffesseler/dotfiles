@@ -1,11 +1,11 @@
 #!/bin/sh
 
 # vim
-git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 mkdir ~/.vim/colors
 cp colors/Tomorrow-Night.vim ../.vim/colors/
 cp colors/solarized.vim ../.vim/colors/
-vim +PluginInstall +qall
+vim +PlugInstall +qall
 
 # tmux
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm

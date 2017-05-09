@@ -3,7 +3,6 @@ set shell=/bin/bash " use bash instead of fish to make PluginInstall works
 " Vim settings, rather then Vi settings (much better!).
 " This must be first, because it changes other options as a side effect.
 set nocompatible
-filetype off
 
 " ================ Path ====================
 set path+=~/KapIT/iob/server/client-html/src/main/resources/client-html-src/src/app
@@ -77,52 +76,50 @@ set scrolloff=8         "Start scrolling when we're 8 lines away from margins
 set sidescrolloff=15
 set sidescroll=1
 
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
 
-call vundle#begin() "let Vundle manage Vundle, required
+call plug#begin('~/.vim/plugged')
 
-Plugin 'jiangmiao/auto-pairs'
-Plugin 'gmarik/Vundle.vim'
-Plugin 'https://github.com/kien/ctrlp.vim'
-Plugin 'rking/ag.vim'
-Plugin 'sjl/gundo.vim'
-Plugin 'scrooloose/syntastic'
-Plugin 'tpope/vim-commentary'
-Plugin 'terryma/vim-expand-region'
-Plugin 'tpope/vim-fugitive'
-Plugin 'shumphrey/fugitive-gitlab.vim'
-Plugin 'groenewege/vim-less'
-Plugin 'tpope/vim-surround'
-Plugin 'tpope/vim-vinegar'
-Plugin 'pangloss/vim-javascript'
-Plugin 'othree/javascript-libraries-syntax.vim'
-Plugin 'tpope/vim-unimpaired'
-Plugin 'wincent/terminus'
-Plugin 'mattn/emmet-vim'
-Plugin 'ternjs/tern_for_vim'
-Plugin 'majutsushi/tagbar'
-Plugin 'aklt/vim-substitute'
-Bundle 'wakatime/vim-wakatime'
-Plugin 'Shougo/vimproc'
-Plugin 'itchyny/lightline.vim'
-Plugin 'elmcast/elm-vim'
-Plugin 'Shougo/neocomplete.vim'
-Plugin 'Shougo/neosnippet'
-Plugin 'Shougo/neosnippet-snippets'
-Plugin 'othree/html5-syntax.vim'
-Plugin 'edkolev/tmuxline.vim'
-Plugin 'rhysd/committia.vim'
-Plugin 'AndrewRadev/linediff.vim'
-Plugin 'jasonshell/vim-svg-indent'
-Plugin 'heavenshell/vim-jsdoc'
-Plugin 'elixir-lang/vim-elixir'
-Plugin 'junegunn/goyo.vim'
-Plugin 'tpope/vim-markdown'
-Plugin 'junegunn/vim-xmark'
+Plug 'jiangmiao/auto-pairs'
+Plug 'gmarik/Vundle.vim'
+Plug 'https://github.com/kien/ctrlp.vim'
+Plug 'rking/ag.vim'
+Plug 'sjl/gundo.vim'
+Plug 'scrooloose/syntastic'
+Plug 'tpope/vim-commentary'
+Plug 'terryma/vim-expand-region'
+Plug 'tpope/vim-fugitive'
+Plug 'shumphrey/fugitive-gitlab.vim'
+Plug 'groenewege/vim-less'
+Plug 'tpope/vim-surround'
+Plug 'tpope/vim-vinegar'
+Plug 'pangloss/vim-javascript'
+Plug 'othree/javascript-libraries-syntax.vim'
+Plug 'tpope/vim-unimpaired'
+Plug 'wincent/terminus'
+Plug 'mattn/emmet-vim'
+Plug 'ternjs/tern_for_vim'
+Plug 'majutsushi/tagbar'
+Plug 'aklt/vim-substitute'
+Plug 'wakatime/vim-wakatime'
+Plug 'Shougo/vimproc'
+Plug 'itchyny/lightline.vim'
+Plug 'elmcast/elm-vim'
+Plug 'Shougo/neocomplete.vim'
+Plug 'Shougo/neosnippet'
+Plug 'Shougo/neosnippet-snippets'
+Plug 'othree/html5-syntax.vim'
+Plug 'edkolev/tmuxline.vim'
+Plug 'rhysd/committia.vim'
+Plug 'AndrewRadev/linediff.vim'
+Plug 'jasonshell/vim-svg-indent'
+Plug 'heavenshell/vim-jsdoc'
+Plug 'elixir-lang/vim-elixir'
+Plug 'junegunn/goyo.vim'
+Plug 'tpope/vim-markdown'
+Plug 'junegunn/vim-xmark'
+Plug 'junegunn/fzf.vim'
 
-call vundle#end()  " required
-filetype plugin indent on  " required
+call plug#end()  " required
 
 " ================ Indentation ======================
 set autoindent
