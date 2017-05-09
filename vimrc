@@ -84,7 +84,6 @@ call plug#begin('~/.vim/plugged')
 
 Plug 'jiangmiao/auto-pairs'
 Plug 'gmarik/Vundle.vim'
-Plug 'https://github.com/kien/ctrlp.vim'
 Plug 'rking/ag.vim'
 Plug 'sjl/gundo.vim'
 Plug 'scrooloose/syntastic'
@@ -190,14 +189,6 @@ vnoremap <Up> :m '<-2<CR>gv=gv
 " a selection without yanking it
 vmap r "_dP"
 " ============= Plugin Configuration ============
-
-" exclude directories from showing in ctrl p
-let g:ctrlp_custom_ignore = {
-    \ 'dir': '\.git$\|bower_components$\|node_modules$\|target$\|logs$\|log$'}
-let g:ctrlp_cmd = 'CtrlPMixed'
-let g:ctrlp_match_window = 'bottom,order:ttb'
-let g:ctrlp_working_path_mode = 0
-
 " ag config
 let g:ag_prg='ag -S --nocolor --nogroup --column --ignore node_modules --ignore target --ignore bower_components --ignore logs'
 nnoremap <leader>a :Ag --js
@@ -318,3 +309,10 @@ let g:neocomplete#enable_at_startup = 1
 imap <C-k>     <Plug>(neosnippet_expand_or_jump)
 smap <C-k>     <Plug>(neosnippet_expand_or_jump)
 xmap <C-k>     <Plug>(neosnippet_expand_target)
+
+let g:fzf_action = {
+      \ 'ctrl-s': 'split',
+      \ 'ctrl-v': 'vsplit'
+      \ }
+nnoremap <c-p> :FZF<cr>
+nnoremap <c-b> :Buffers<cr>
