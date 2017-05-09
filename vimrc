@@ -120,6 +120,7 @@ Plug 'elixir-lang/vim-elixir'
 Plug 'junegunn/goyo.vim'
 Plug 'tpope/vim-markdown'
 Plug 'junegunn/vim-xmark'
+Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 
 call plug#end()  " required
