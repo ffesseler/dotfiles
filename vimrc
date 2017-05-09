@@ -64,6 +64,9 @@ inoremap i; <Esc>$a;
 set splitright
 nnoremap ` '
 
+" ================ Undo/Redo ========================
+set undofile
+set undodir=~/.vim/undodir
 " ================ Search    ========================
 set hlsearch
 nnoremap <silent> <Space> :nohlsearch<Bar>:echo<CR>
