@@ -7,7 +7,7 @@ set -gx PATH $PATH ./node_modules/.bin
 set -gx PATH $PATH /Applications/Postgres.app/Contents/Versions/latest/bin
 set -x JENV_ROOT /usr/local/opt/jenv
 set -x DATABASE_URL postgres:///(whoami)
-set -gx FZF_DEFAULT_COMMAND 'rg --files --no-ignore --hidden --follow --glob "!{.git,node_modules,logs,target,bower_components}/*"'
+set -gx FZF_DEFAULT_COMMAND 'rg --files --no-ignore --hidden --follow --glob "!{.git,node_modules,logs,target,bower_components,.idea}/*"'
 
 if test -f /Users/ffesseler/.autojump/share/autojump/autojump.fish; . /Users/ffesseler/.autojump/share/autojump/autojump.fish; end
 . $HOME/.config/fish/frontend-aliases.fish
