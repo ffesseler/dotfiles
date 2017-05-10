@@ -315,4 +315,4 @@ let g:fzf_action = {
       \ 'ctrl-v': 'vsplit'
       \ }
 nnoremap <c-p> :FZF<cr>
-nnoremap <c-b> :Buffers<cr>
+nnoremap <S-b> :Buffers<cr>
