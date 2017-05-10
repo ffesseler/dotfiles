@@ -187,7 +187,7 @@ vnoremap <Up> :m '<-2<CR>gv=gv
 
 " selection will be substituted with your current register. Allow to replace
 " a selection without yanking it
-vmap r "_dP"
+vnoremap r "_dP"
 " ============= Plugin Configuration ============
 " ag config
 let g:ag_prg='ag -S --nocolor --nogroup --column --ignore node_modules --ignore target --ignore bower_components --ignore logs'
