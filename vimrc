@@ -162,6 +162,9 @@ augroup END " }
 noremap <leader>y "*y
 noremap <leader>yy "*Y
 
+" Copy file path on clipboard
+noremap <silent> <F4> :let @+=expand("%")<CR>
+
 " Preserve indentation while pasting text from the OS X clipboard
 noremap <leader>p :set paste<CR>:put    *<CR>:set nopaste<CR>
 
