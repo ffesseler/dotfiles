@@ -319,3 +319,5 @@ let g:fzf_action = {
       \ }
 nnoremap <c-p> :FZF<cr>
 nnoremap <S-b> :Buffers<cr>
+
+imap <C-f> <plug>(fzf-complete-line)
