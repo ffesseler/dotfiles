@@ -49,6 +49,7 @@ brew 'lastpass-cli', args : ['with-pinentry', 'with-doc']
 brew 'fzy'
 brew 'ripgrep'
 brew 'trash'
+brew 'ranger'
 
 # Quicklook
 cask 'betterzipql'
