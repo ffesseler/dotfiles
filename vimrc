@@ -116,12 +116,8 @@ Plug 'AndrewRadev/linediff.vim'
 Plug 'jasonshell/vim-svg-indent'
 Plug 'heavenshell/vim-jsdoc'
 Plug 'elixir-lang/vim-elixir'
-Plug 'junegunn/goyo.vim'
-Plug 'tpope/vim-markdown'
-Plug 'junegunn/vim-xmark'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
-
 call plug#end()  " required
 
 " ================ Indentation ======================
@@ -302,10 +298,6 @@ endfunction
 let g:jsdoc_allow_input_prompt = 1
 map K <Plug>(expand_region_expand)
 map J <Plug>(expand_region_shrink)
-
-" markdown handling
-let g:mardown_fenced_languages = ['javascript']
-autocmd! User GoyoLeave nested set bg=dark | colo Tomorrow-Night
 
 " neosnippet
 let g:neocomplete#enable_at_startup = 1
