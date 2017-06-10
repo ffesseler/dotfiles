@@ -61,6 +61,8 @@ noremap <C-I> <C-A>
 inoremap ii <Esc>$a
 inoremap i; <Esc>$a;
 
+inoremap <leader>o <Esc>O
+
 set splitright
 nnoremap ` '
 
