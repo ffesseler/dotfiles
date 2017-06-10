@@ -120,7 +120,10 @@ Plug 'heavenshell/vim-jsdoc'
 Plug 'elixir-lang/vim-elixir'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
+Plug 'janko-m/vim-test'
+Plug 'benmills/vimux'
 call plug#end()  " required
+
 
 " ================ Indentation ======================
 set autoindent
@@ -349,3 +352,6 @@ function! s:NextTextObject(motion, dir)
   exe "normal! ".a:dir.c."v".a:motion.c
 endfunction
 
+nmap <silent> <leader>t :TestNearest<CR>
+nmap <silent> <leader>T :TestFile<CR>
+let test#strategy = "vimux"
