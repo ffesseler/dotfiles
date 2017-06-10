@@ -353,6 +353,6 @@ function! s:NextTextObject(motion, dir)
   exe "normal! ".a:dir.c."v".a:motion.c
 endfunction
 
-nmap <silent> <leader>t :TestNearest<CR>
-nmap <silent> <leader>T :TestFile<CR>
+nmap <silent> <leader>T :TestNearest<CR>
+nmap <silent> <leader>t :TestFile<CR>
 let test#strategy = "vimux"
