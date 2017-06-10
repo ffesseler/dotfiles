@@ -122,6 +122,7 @@ Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
 Plug 'janko-m/vim-test'
 Plug 'benmills/vimux'
+Plug 'davinche/godown-vim'
 call plug#end()  " required
 
 
