@@ -33,3 +33,5 @@
 	insteadOf = git://
 [push]
 	default = current
+[fetch]
+	prune = true
