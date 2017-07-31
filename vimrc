@@ -123,6 +123,7 @@ Plug 'junegunn/fzf.vim'
 Plug 'janko-m/vim-test'
 Plug 'benmills/vimux'
 Plug 'davinche/godown-vim'
+Plug 'lifepillar/vim-cheat40'
 call plug#end()  " required
 
 
@@ -356,3 +357,5 @@ endfunction
 nmap <silent> <leader>T :TestNearest<CR>
 nmap <silent> <leader>t :TestFile<CR>
 let test#strategy = "vimux"
+
+let g:cheat40_use_default = 0

@@ -6,6 +6,7 @@ mkdir ~/.vim/colors
 cp colors/Tomorrow-Night.vim ../.vim/colors/
 cp colors/solarized.vim ../.vim/colors/
 vim +PlugInstall +qall
+ln -s ~/dotfiles/cheat40.txt ~/.vim
 
 # tmux
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
