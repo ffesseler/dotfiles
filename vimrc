@@ -57,6 +57,8 @@ nnoremap <C-H> <C-W><C-H>
 "C-A doesn't work to increment number
 noremap <C-I> <C-A>
 
+nnoremap <C-W><C-V> :AV<CR>
+
 "Double tap i while in insert to go to the end of the line.
 inoremap ii <Esc>$a
 inoremap i; <Esc>$a;
@@ -124,6 +126,7 @@ Plug 'janko-m/vim-test'
 Plug 'benmills/vimux'
 Plug 'davinche/godown-vim'
 Plug 'lifepillar/vim-cheat40'
+Plug 'tpope/vim-projectionist'
 call plug#end()  " required
 
 
