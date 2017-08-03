@@ -150,6 +150,8 @@ colorscheme Tomorrow-Night
 " ============== Custom bindings ==================
 " remove whitespace on save
 autocmd BufWritePre * :%s/\s\+$//e
+" create file as soon as edit it
+autocmd BufNewFile * :write
 
 autocmd FileType css set omnifunc=csscomplete#CompleteCSS
 autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
