@@ -90,7 +90,7 @@ Plug 'jiangmiao/auto-pairs'
 Plug 'gmarik/Vundle.vim'
 Plug 'rking/ag.vim'
 Plug 'sjl/gundo.vim'
-Plug 'scrooloose/syntastic'
+Plug 'w0rp/ale'
 Plug 'tpope/vim-commentary'
 Plug 'terryma/vim-expand-region'
 Plug 'tpope/vim-fugitive'
@@ -203,13 +203,6 @@ vnoremap r "_dP"
 " ag config
 let g:ag_prg='ag -S --nocolor --nogroup --column --ignore node_modules --ignore target --ignore bower_components --ignore logs'
 nnoremap <leader>a :Ag --js
-
-let g:syntastic_javascript_checkers=['eslint']
-" let g:syntastic_typescript_checkers=['tslint', 'eslint']
-" let g:syntastic_typescript_tsc_fname = '' "http://stackoverflow.com/questions/34102184/use-tsconfig-json-for-tsc-with-syntastic-in-vim
-let g:syntastic_java_checkers=[]
-let g:syntastic_html_checkers = ['tidy']
-let g:syntastic_html_tidy_exec = 'tidy'
 
 nnoremap <buffer> <silent> S :Cycle<CR>
 
@@ -364,3 +357,12 @@ nmap <silent> <leader>t :TestFile<CR>
 let test#strategy = "vimux"
 
 let g:cheat40_use_default = 0
+
+noremap <silent> <F2> :TernRename<CR>
+
+let g:ale_lint_on_text_changed='never'
+nmap <silent> <C-n> <Plug>(ale_next_wrap)
+let g:ale_set_loclist = 0
+let g:ale_set_quickfix = 1
+let g:ale_open_list = 1
+let g:ale_linters = {'javascript': ['eslint'], 'html': []}
