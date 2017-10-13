@@ -12,3 +12,4 @@ alias rm "trash"
 
 if test -f /Users/ffesseler/.autojump/share/autojump/autojump.fish; . /Users/ffesseler/.autojump/share/autojump/autojump.fish; end
 . $HOME/.config/fish/frontend-aliases.fish
+rvm default
