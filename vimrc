@@ -1,9 +1,5 @@
 set shell=/bin/bash " use bash instead of fish to make PluginInstall works
 
-" Vim settings, rather then Vi settings (much better!).
-" This must be first, because it changes other options as a side effect.
-set nocompatible
-
 " ================ Path ====================
 set path+=~/KapIT/iob/server/client-html/src/main/resources/client-html-src/src/app
 set suffixesadd+=.js
