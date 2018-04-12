@@ -122,7 +122,6 @@ Plug 'benmills/vimux'
 Plug 'davinche/godown-vim'
 Plug 'lifepillar/vim-cheat40'
 Plug 'gu-fan/riv.vim'
-Plug 'tpope/vim-db'
 Plug 'henrik/vim-reveal-in-finder'
 call plug#end()  " required
 
