@@ -121,7 +121,9 @@ Plug 'janko-m/vim-test'
 Plug 'benmills/vimux'
 Plug 'davinche/godown-vim'
 Plug 'lifepillar/vim-cheat40'
-Plug 'tpope/vim-projectionist'
+Plug 'gu-fan/riv.vim'
+Plug 'tpope/vim-db'
+Plug 'henrik/vim-reveal-in-finder'
 call plug#end()  " required
 
 
@@ -296,8 +298,8 @@ function! Insert(type, ...)
 endfunction
 
 let g:jsdoc_allow_input_prompt = 1
-map K <Plug>(expand_region_expand)
-map J <Plug>(expand_region_shrink)
+vmap v <Plug>(expand_region_expand)
+vmap <C-v> <Plug>(expand_region_shrink)
 
 " neosnippet
 let g:neocomplete#enable_at_startup = 1
@@ -305,12 +307,24 @@ imap <C-k>     <Plug>(neosnippet_expand_or_jump)
 smap <C-k>     <Plug>(neosnippet_expand_or_jump)
 xmap <C-k>     <Plug>(neosnippet_expand_target)
 
+" Put the searched word in the middle of the screen.
+nnoremap <silent>n nzz
+nnoremap <silent>N Nzz
+nnoremap <silent>* *zz
+
 let g:fzf_action = {
       \ 'ctrl-s': 'split',
       \ 'ctrl-v': 'vsplit'
       \ }
-nnoremap <c-p> :FZF<cr>
+nnoremap <c-p> :GFiles<cr>
 nnoremap <S-b> :Buffers<cr>
+nnoremap <S-h> :History<cr>
+nnoremap <S-t> :Tags<cr>
+nmap <Leader>l :BLines<CR>
+nmap <Leader>L :Lines<CR>
+nmap <Leader>: :History:<CR>
+nmap <Leader>/ :History/<CR>
+nmap <Leader>M :Maps<CR>
 
 imap <C-f> <plug>(fzf-complete-line)
 
@@ -353,11 +367,23 @@ let test#strategy = "vimux"
 
 let g:cheat40_use_default = 0
 
-noremap <silent> <F2> :TernRename<CR>
-
+" ale config
 let g:ale_lint_on_text_changed='never'
 nmap <silent> <C-n> <Plug>(ale_next_wrap)
 let g:ale_set_loclist = 0
 let g:ale_set_quickfix = 1
 let g:ale_open_list = 1
-let g:ale_linters = {'javascript': ['eslint'], 'html': []}
+let g:ale_linters = {'javascript': ['eslint'], 'html': [], 'less': ['stylelint']}
+
+nmap <silent> <leader>, :only<CR>
+
+" RIV maps
+nnoremap <silent> <Leader>n i.. note::<CR>
+inoremap <silent> <Leader>n .. note::<CR>
+nnoremap <silent> <Leader>w i.. warning::<CR>
+inoremap <silent> <Leader>w .. warning::<CR>
+inoremap <silent> <Leader>c .. code::<CR><CR>
+nnoremap <silent> <Leader>t i.. tip::<CR>
+inoremap <silent> <Leader>t .. tip::<CR>
+
+:xnoremap ) c:ref:`<C-r>" <>`<Esc>ba
