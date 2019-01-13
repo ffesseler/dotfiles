@@ -14,9 +14,17 @@ set autoread                    "Reload files changed outside vim
 set history=1000                "Store lots of cmd line history
 set gdefault                    "Always substitue globally
 set wildmenu                    "Display menu on autocomplete
-
+au FocusGained,BufEnter * :checktime
 autocmd FileType gitcommit set textwidth=80
 autocmd FileType gitcommit set colorcolumn=81
+
+
+augroup test
+  autocmd!
+  autocmd BufWrite * if test#exists() |
+    \   TestFile |
+    \ endif
+augroup END
 
 " This makes vim act like all other editors, buffers can
 " exist in the background without being in a window.
@@ -105,9 +113,6 @@ Plug 'wakatime/vim-wakatime'
 Plug 'Shougo/vimproc'
 Plug 'itchyny/lightline.vim'
 Plug 'elmcast/elm-vim'
-Plug 'Shougo/neocomplete.vim'
-Plug 'Shougo/neosnippet'
-Plug 'Shougo/neosnippet-snippets'
 Plug 'othree/html5-syntax.vim'
 Plug 'edkolev/tmuxline.vim'
 Plug 'rhysd/committia.vim'
@@ -122,7 +127,16 @@ Plug 'benmills/vimux'
 Plug 'davinche/godown-vim'
 Plug 'lifepillar/vim-cheat40'
 Plug 'gu-fan/riv.vim'
+Plug 'tpope/vim-db'
+Plug 'tpope/vim-scriptease'
 Plug 'henrik/vim-reveal-in-finder'
+Plug 'AaronLasseigne/yank-code'
+Plug 'SirVer/ultisnips'
+Plug 'honza/vim-snippets'
+Plug 'Shougo/deoplete.nvim'
+Plug 'roxma/nvim-yarp'
+Plug 'roxma/vim-hug-neovim-rpc'
+Plug 'janko-m/vim-test'
 call plug#end()  " required
 
 
@@ -300,12 +314,6 @@ let g:jsdoc_allow_input_prompt = 1
 vmap v <Plug>(expand_region_expand)
 vmap <C-v> <Plug>(expand_region_shrink)
 
-" neosnippet
-let g:neocomplete#enable_at_startup = 1
-imap <C-k>     <Plug>(neosnippet_expand_or_jump)
-smap <C-k>     <Plug>(neosnippet_expand_or_jump)
-xmap <C-k>     <Plug>(neosnippet_expand_target)
-
 " Put the searched word in the middle of the screen.
 nnoremap <silent>n nzz
 nnoremap <silent>N Nzz
@@ -369,20 +377,19 @@ let g:cheat40_use_default = 0
 " ale config
 let g:ale_lint_on_text_changed='never'
 nmap <silent> <C-n> <Plug>(ale_next_wrap)
-let g:ale_set_loclist = 0
-let g:ale_set_quickfix = 1
+let g:ale_set_loclist = 1
 let g:ale_open_list = 1
 let g:ale_linters = {'javascript': ['eslint'], 'html': [], 'less': ['stylelint']}
+let g:ale_list_window_size = 5
 
 nmap <silent> <leader>, :only<CR>
 
-" RIV maps
-nnoremap <silent> <Leader>n i.. note::<CR>
-inoremap <silent> <Leader>n .. note::<CR>
-nnoremap <silent> <Leader>w i.. warning::<CR>
-inoremap <silent> <Leader>w .. warning::<CR>
-inoremap <silent> <Leader>c .. code::<CR><CR>
-nnoremap <silent> <Leader>t i.. tip::<CR>
-inoremap <silent> <Leader>t .. tip::<CR>
+nnoremap <silent> <Leader>c :cd ~/KapIT/iob/<CR>
 
-:xnoremap ) c:ref:`<C-r>" <>`<Esc>ba
+nmap <silent> <leader>w A<Space><Backspace><Esc>:write<CR>
+
+let g:deoplete#enable_at_startup = 1
+
+nmap <silent> <Leader>t :TestFile<CR>
+
+let test#javascript#mocha#file_pattern = '**\**.test.js'
