@@ -19,12 +19,12 @@ autocmd FileType gitcommit set textwidth=80
 autocmd FileType gitcommit set colorcolumn=81
 
 
-augroup test
-  autocmd!
-  autocmd BufWrite * if test#exists() |
-    \   TestFile |
-    \ endif
-augroup END
+" augroup test
+"   autocmd!
+"   autocmd BufWrite * if test#exists() |
+"     \   TestFile |
+"     \ endif
+" augroup END
 
 " This makes vim act like all other editors, buffers can
 " exist in the background without being in a window.
@@ -122,7 +122,7 @@ Plug 'heavenshell/vim-jsdoc'
 Plug 'elixir-lang/vim-elixir'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'junegunn/fzf.vim'
-Plug 'janko-m/vim-test'
+" Plug 'janko-m/vim-test'
 Plug 'benmills/vimux'
 Plug 'davinche/godown-vim'
 Plug 'lifepillar/vim-cheat40'
@@ -136,7 +136,9 @@ Plug 'honza/vim-snippets'
 Plug 'Shougo/deoplete.nvim'
 Plug 'roxma/nvim-yarp'
 Plug 'roxma/vim-hug-neovim-rpc'
-Plug 'janko-m/vim-test'
+Plug 'wellle/targets.vim'
+" Plug 'janko-m/vim-test'
+" Plug 'tpope/vim-projectionist'
 call plug#end()  " required
 
 
@@ -168,6 +170,8 @@ autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
 autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
 
 autocmd BufNewFile,BufReadPost *.md set filetype=markdown
+au BufRead,BufNewFile *.rst setlocal textwidth=80
+au BufRead,BufNewFile *.po setlocal textwidth=80
 
 " Open vimrc and autoreload config
 nnoremap <leader>v :e ~/.vimrc<CR>
@@ -393,3 +397,4 @@ let g:deoplete#enable_at_startup = 1
 nmap <silent> <Leader>t :TestFile<CR>
 
 let test#javascript#mocha#file_pattern = '**\**.test.js'
+let g:test#preserve_screen = 0

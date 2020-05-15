@@ -111,6 +111,9 @@ defaults write com.apple.finder EmptyTrashSecurely -bool true
 # Show the ~/Library folder
 chflags nohidden ~/Library
 
+# Hide icons on Desktop
+defaults write com.apple.finder CreateDesktop false
+
 ###############################################################################
 # Dock & hot corners                                                          #
 ###############################################################################
