@@ -1,3 +1,3 @@
 function iob
-        cd ~/KapIT/iob/
+        cd ~/work/iob/
 end
