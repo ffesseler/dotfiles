@@ -56,7 +56,6 @@ cask 'alfred'
 cask 'evernote'
 cask 'google-chrome'
 cask 'firefox'
-cask 'homebrew/cask-versions/firefox-esr'
 cask 'iterm2'
 cask 'virtualbox'
 cask 'vlc'
@@ -70,6 +69,7 @@ cask 'atom'
 cask 'spideroakone'
 cask 'wkhtmltopdf'
 cask 'postgres'
+cask 'google-chat'
 
 # Install Mac App Store apps
 mas 'irvue', id: 1039633667
