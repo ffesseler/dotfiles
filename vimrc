@@ -31,6 +31,12 @@ autocmd FileType gitcommit set colorcolumn=81
 " " http://items.sjbach.com/319/configuring-vim-right
 set hidden
 
+if empty(glob('~/.vim/autoload/plug.vim'))
+  silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
 " Change leader to a comma because the backslash is too far away
 " That means all \x commands turn into ,x
 " The mapleader has to be set before vundle starts loading all
@@ -133,12 +139,13 @@ Plug 'henrik/vim-reveal-in-finder'
 Plug 'AaronLasseigne/yank-code'
 Plug 'SirVer/ultisnips'
 Plug 'honza/vim-snippets'
-Plug 'Shougo/deoplete.nvim'
+" Plug 'Shougo/deoplete.nvim'
 Plug 'roxma/nvim-yarp'
 Plug 'roxma/vim-hug-neovim-rpc'
 Plug 'wellle/targets.vim'
 " Plug 'janko-m/vim-test'
 " Plug 'tpope/vim-projectionist'
+Plug 'chriskempson/base16-vim'
 call plug#end()  " required
 
 

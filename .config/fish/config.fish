@@ -1,6 +1,5 @@
 . $HOME/.config/fish/solarized.fish
 set -x JAVA_HOME (/usr/libexec/java_home -v1.8)
-set -x JAVA_7_HOME (/usr/libexec/java_home -v1.7)
 set -x JAVA_8_HOME (/usr/libexec/java_home -v1.8)
 set -x MAVEN_OPTS '-Xmx1024m -Xms512m -XX:MaxPermSize=256m'
 set -x BUILD_NUMBER 99999

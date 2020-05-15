@@ -2,6 +2,7 @@ cask 'java'
 cask 'enpass'
 
 tap 'phrase/brewed'
+tap 'adoptopenjdk/openjdk'
 
 brew 'asciidoc'
 brew 'cheat'
@@ -70,6 +71,7 @@ cask 'spideroakone'
 cask 'wkhtmltopdf'
 cask 'postgres'
 cask 'google-chat'
+cask 'adoptopenjdk8'
 
 # Install Mac App Store apps
 mas 'irvue', id: 1039633667
