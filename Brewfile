@@ -3,6 +3,7 @@ cask 'enpass'
 
 tap 'phrase/brewed'
 tap 'adoptopenjdk/openjdk'
+tap 'homebrew/cask-versions'
 
 brew 'asciidoc'
 brew 'cheat'
