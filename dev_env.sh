@@ -1,8 +1,8 @@
 #!/bin/sh
 
 asdf plugin add nodejs
-asdf install nodejs 20.11.1
-asdf set -u nodejs 20.11.1
+asdf install nodejs 22.17.0
+asdf set -u nodejs 22.17.0
 
 npm install -g @anthropic-ai/claude-code
 
