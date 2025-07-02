@@ -1,4 +1,5 @@
 brew 'asdf'
+brew 'uv'
 
 # Apps
 cask 'slack'
