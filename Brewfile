@@ -1,3 +1,5 @@
+brew 'asdf'
+
 # Apps
 cask 'slack'
 cask 'google-chrome'
