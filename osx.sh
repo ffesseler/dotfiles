@@ -14,3 +14,8 @@ defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 64 "<dic
 # Dock
 defaults write com.apple.dock wvous-tl-corner -int 13
 killall Dock
+
+# Disable Spotlight & Spotlight keyboard binding
+sudo mdutil -i off
+defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 64 "<dict><key>enabled</key><false/></dict>"
+/usr/libexec/PlistBuddy ~/Library/Preferences/com.apple.symbolichotkeys.plist -c "Set :AppleSymbolicHotKeys:64:enabled bool false"
