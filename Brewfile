@@ -1,5 +1,9 @@
 brew 'asdf'
 brew 'uv'
+brew 'llm'
+brew 'bat'
+brew 'glow'
+brew 'gh'
 
 # Apps
 cask 'slack'
@@ -9,3 +13,5 @@ cask 'warp'
 cask 'docker-desktop'
 cask 'visual-studio-code@insiders'
 cask 'google-drive'
+cask 'google-cloud-sdk'
+cask 'Raycast'
