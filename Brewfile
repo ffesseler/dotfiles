@@ -4,6 +4,7 @@ brew 'llm'
 brew 'bat'
 brew 'glow'
 brew 'gh'
+brew 'yt-dlp'
 
 # Apps
 cask 'slack'
@@ -15,3 +16,4 @@ cask 'visual-studio-code@insiders'
 cask 'google-drive'
 cask 'google-cloud-sdk'
 cask 'Raycast'
+cask 'brave-browser'
