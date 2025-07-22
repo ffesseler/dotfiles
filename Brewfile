@@ -5,6 +5,14 @@ brew 'bat'
 brew 'glow'
 brew 'gh'
 brew 'yt-dlp'
+brew 'rg'
+
+# CLI Agents
+brew 'codex'
+brew 'sst/tap/opencode'
+cask 'repo-prompt'
+tap 'steipete/tap'
+brew 'peekaboo'
 
 # Apps
 cask 'slack'
@@ -17,3 +25,4 @@ cask 'google-drive'
 cask 'google-cloud-sdk'
 cask 'Raycast'
 cask 'brave-browser'
+cask 'expo-orbit'
