@@ -6,6 +6,7 @@ brew 'glow'
 brew 'gh'
 brew 'yt-dlp'
 brew 'rg'
+brew 'localtunnel'
 
 # CLI Agents
 brew 'codex'

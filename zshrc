@@ -15,4 +15,22 @@ alias glog="git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset
 alias glast='git log -1 HEAD'
 
 # --- LLM ---
-alias flash ='llm -m gemini-2.5-flash-lite-preview-06-17'
+
+lite() {
+  llm -m gemini-2.5-flash-lite-preview-06-17 "$@" | glow -
+}
+
+flash() {
+  llm -m gemini-2.5-flash "$@" | glow -
+}
+
+hn() {
+  local number="$1"
+  llm -m gemini-2.5-flash -f "hn:$number" 'summary with illustrative direct quotes' -o thinking_budget 0 > /tmp/llm_output.md && glow -w 200 /tmp/llm_output.md && glow -w 200 -p /tmp/llm_output.md
+}
+
+
+# --- Replace ---
+alias cat='bat'
+
+

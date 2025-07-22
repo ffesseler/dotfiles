@@ -11,3 +11,4 @@ uv python install 3.11
 
 llm install llm-gemini
 llm keys set gemini
+llm install llm-hacker-news
