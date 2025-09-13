@@ -10,6 +10,7 @@ brew 'localtunnel'
 brew 'htop'
 brew 'watchman'
 brew 'fastfetch'
+brew 'ffmpeg'
 
 # CLI Agents
 brew 'codex'
