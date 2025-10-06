@@ -12,6 +12,11 @@ brew 'watchman'
 brew 'fastfetch'
 brew 'ffmpeg'
 
+# DB
+tap 'mongodb/brew'
+brew 'mongodb-database-tools'
+cask 'mongodb-compass'
+
 # CLI Agents
 brew 'codex'
 brew 'sst/tap/opencode'
@@ -32,7 +37,6 @@ cask 'Raycast'
 cask 'brave-browser'
 cask 'expo-orbit'
 cask 'microsoft-edge'
-cask 'mongodb-compass'
 cask 'figma'
 cask 'enpass'
 cask 'claude'
