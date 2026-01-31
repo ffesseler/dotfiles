@@ -4,7 +4,6 @@ asdf plugin add nodejs
 asdf install nodejs 22.17.0
 asdf set -u nodejs 22.17.0
 
-npm install -g @anthropic-ai/claude-code
 npm install -g cchistory
 npm install -g eas-cli
 
