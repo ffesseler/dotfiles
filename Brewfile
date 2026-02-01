@@ -64,4 +64,4 @@ cask 'blender'
 cask 'productdevbook/tap/portkiller'
 cask 'keycastr'
 cask 'fastrepl/hyprnote/hyprnote@nightly'
-
+cask 'ghostty'
