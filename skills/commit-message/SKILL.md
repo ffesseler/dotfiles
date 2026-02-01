@@ -344,6 +344,19 @@ Related-Bug: #7890
 
 **Important:** When helping users write commit messages interactively, analyze BOTH the git changes AND the conversation history. The chat context often contains valuable rationale, design decisions, and explanations that should be captured in the commit message.
 
+**After generating a commit message proposal, ALWAYS copy it to the clipboard** using one of these commands:
+- macOS: `pbcopy`
+- Linux: `xclip -selection clipboard` or `xsel --clipboard --input`
+- Windows: `clip`
+
+Example workflow:
+```bash
+# After crafting the commit message, copy it to clipboard
+echo "Your commit message here" | pbcopy
+```
+
+This allows users to easily paste the message into `git commit` or review it in their editor.
+
 ### 1. Analyze Changes
 
 **Review git changes:**
