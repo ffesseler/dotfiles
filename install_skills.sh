@@ -45,6 +45,7 @@ echo "📦 Installing skills from external repositories..."
 # List of external skills to install (GitHub paths)
 EXTERNAL_SKILLS=(
     "https://github.com/anthropics/skills/tree/main/skills/skill-creator"
+    "https://github.com/nicobailon/surf-cli/tree/main/skills/surf"
     # Add more skills here as needed
     # "https://github.com/owner/repo/tree/main/skills/skill-name"
 )

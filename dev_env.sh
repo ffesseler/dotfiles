@@ -8,6 +8,7 @@ npm install -g cchistory
 npm install -g eas-cli
 npm install -g @mariozechner/pi-coding-agent
 npm install -g pnpm
+npm install -g surf-cli
 
 uv python install 3.11
 
