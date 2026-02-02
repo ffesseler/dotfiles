@@ -7,6 +7,18 @@ description: Guide for writing clear, informative commit messages based on canon
 
 This skill provides comprehensive guidance for writing high-quality commit messages based on two canonical sources: Simon Tatham's blog post on commit messages and the OpenStack GitCommitMessages wiki.
 
+## ⚠️ CRITICAL: This Skill Only PROPOSES Commit Messages
+
+**NEVER create commits yourself.** This skill's ONLY purpose is to:
+
+1. ✅ Analyze git changes and conversation context
+2. ✅ Draft a well-structured commit message
+3. ✅ Copy the message to clipboard for user to use
+4. ❌ NEVER run `git commit` commands
+5. ❌ NEVER actually create commits
+
+**Your role:** Propose the commit message, explain your reasoning, copy it to clipboard, then let the USER decide when and how to commit.
+
 ## Usage
 
 **Basic invocation:**
@@ -342,12 +354,24 @@ Related-Bug: #7890
 
 ## Workflow for Creating Commit Messages
 
+**🚫 CRITICAL RULE: NEVER RUN `git commit` COMMANDS**
+
+This skill's workflow is:
+1. **Analyze** changes and context
+2. **Propose** a commit message
+3. **Copy** to clipboard
+4. **STOP** - Let the user commit
+
 **Important:** When helping users write commit messages interactively, analyze BOTH the git changes AND the conversation history. The chat context often contains valuable rationale, design decisions, and explanations that should be captured in the commit message.
 
-**After generating a commit message proposal, ALWAYS copy it to the clipboard** using one of these commands:
-- macOS: `pbcopy`
-- Linux: `xclip -selection clipboard` or `xsel --clipboard --input`
-- Windows: `clip`
+**After generating a commit message proposal, ALWAYS:**
+1. Present the proposed message to the user
+2. Explain your reasoning
+3. Copy it to the clipboard using one of these commands:
+   - macOS: `pbcopy`
+   - Linux: `xclip -selection clipboard` or `xsel --clipboard --input`
+   - Windows: `clip`
+4. **Tell the user** they can now run `git commit` themselves
 
 Example workflow:
 ```bash
@@ -355,15 +379,26 @@ Example workflow:
 echo "Your commit message here" | pbcopy
 ```
 
-This allows users to easily paste the message into `git commit` or review it in their editor.
+**What you MUST do:**
+- ✅ Show the proposed commit message
+- ✅ Copy it to clipboard
+- ✅ Tell user they can now commit with: `git commit -m "$(pbpaste)"`
+
+**What you MUST NEVER do:**
+- ❌ Run `git commit` commands
+- ❌ Run `git add` commands
+- ❌ Modify the git repository state
+- ❌ Stage or unstage files
 
 ### 1. Analyze Changes
 
-**Review git changes:**
+**Review git changes (read-only analysis):**
 ```bash
 git status
 git diff --staged
 ```
+
+**⚠️ These commands are for ANALYSIS ONLY. Do NOT stage files or create commits.**
 
 **Review conversation context:**
 - Read recent chat history for rationale and context
