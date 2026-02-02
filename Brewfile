@@ -19,6 +19,7 @@ brew 'steipete/tap/summarize'
 brew 'steipete/tap/bird'
 brew 'tmux'
 brew 'hcloud'
+brew 'fd'
 
 # DB
 tap 'mongodb/brew'
