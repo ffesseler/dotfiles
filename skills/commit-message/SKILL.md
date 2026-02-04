@@ -69,6 +69,8 @@ Commit messages serve different readers:
 
 Communicate information that readers cannot easily extract from the code itself. Focus on context, rationale, and implications rather than restating what the diff already shows.
 
+**Balance detail with signal-to-noise ratio:** Include enough context to understand the change years later, but avoid redundant explanations of obvious changes. Ask: "What would I need to know if investigating this commit in 2 years?"
+
 ### Self-Containment
 
 Messages must be understandable years later without access to bug trackers, email threads, or external documentation. Include enough detail for independent review.
@@ -131,7 +133,7 @@ includes several checks for profile forms...
 
 ## Essential Content Checklist
 
-Include these elements when relevant:
+Include these elements **when they add value beyond what's visible in the diff**. Not every commit needs all sections—use judgment based on change complexity:
 
 ### 1. Intended Behavior Change
 
@@ -235,6 +237,107 @@ but deleted methods caused null references.
 ❌ Starting with extensive background before describing the change
 ✅ Lead with the change, then provide context
 
+### Over-Documentation
+❌ Explaining obvious changes visible in the diff
+❌ Including routine testing details ("tested it works")
+❌ Lengthy "Changes:" lists that mirror the diff
+✅ Focus on non-obvious rationale and context
+
+## Balancing Detail: When to Be Concise vs Detailed
+
+### Be Concise When:
+
+**Straightforward bug fixes:**
+```
+Fix null check in payment refund handler
+
+The code assumed payment_method_id was never null, causing crashes
+when processing refunds for deleted payment methods. Now we check
+for null and use cached payment data.
+```
+
+**Simple refactoring:**
+```
+Extract user validation to separate function
+
+Reduces code duplication across auth and profile controllers.
+No behavioral changes.
+```
+
+**Obvious improvements:**
+```
+Add index on users(email) to improve login performance
+
+Login queries were doing full table scans. Added index reduces
+query time from 200ms to 5ms.
+```
+
+### Be Detailed When:
+
+**Complex architectural changes:**
+```
+Migrate session storage from memory to Redis
+
+Switch from in-memory sessions to Redis-backed storage to support
+horizontal scaling. Before this change, user sessions were lost
+when deploying new instances or during instance failures.
+
+Changes:
+- Add Redis connection pool with retry logic
+- Implement session serialization/deserialization
+- Add session TTL configuration
+- Migrate existing sessions on first request
+
+Trade-offs:
+- Adds Redis dependency (acceptable for scalability needs)
+- Slightly slower session access (~5ms overhead)
+- Sessions survive deployments and instance failures
+
+Test Plan: Load tested with 10k concurrent users, verified session
+persistence across deployments, tested Redis failover scenarios.
+```
+
+**Non-obvious solutions:**
+```
+Use temporary git branches for alert worktrees (#1234)
+
+Create temporary branches (alert-temp-{timestamp}) instead of using
+'main' directly for worktrees. The main repo directory is itself a
+worktree for 'main', causing "fatal: 'main' is already checked out"
+errors.
+
+Alternative approaches considered:
+- Cloning the repo: Too slow for frequent alerts (~30s per clone)
+- Using git worktree add --detach: Breaks branch-based cleanup logic
+- Reusing single worktree: Creates race conditions with concurrent alerts
+
+Temporary branches are cleaned up after processing completes.
+```
+
+**Security or data integrity issues:**
+```
+Sanitize user input in comment rendering (CVE-2024-1234)
+
+Escape HTML in user comments before rendering to prevent XSS attacks.
+Before this change, users could inject <script> tags in comments.
+
+Using DOMPurify for sanitization instead of manual regex escaping
+because it handles edge cases (e.g., event handlers, data: URLs,
+encoded characters).
+
+SecurityImpact
+Test Plan: Verified against XSS test suite, manual testing with
+OWASP attack vectors
+```
+
+### Rule of Thumb:
+
+- **Simple changes** (< 20 lines, single concept): 2-4 sentence body
+- **Medium changes** (20-100 lines, clear purpose): 1-2 paragraph body
+- **Complex changes** (> 100 lines, multiple concepts): Full structured explanation
+
+Ask: "What questions would a reviewer have that aren't answered by reading the diff?"
+
 ### Reusing Ticket Titles
 ❌ Using ticket title verbatim without specificity
 ✅ Add context to make the commit distinguishable
@@ -259,7 +362,10 @@ Add at the end of commit message when applicable:
 - `Signed-off-by: Name <email>` - Developer Certificate of Origin
 
 **Testing:**
-- `Test Plan:` - Document manual testing performed
+- `Test Plan:` - Document **non-obvious** or **critical** manual testing performed
+  - Include when testing was complex, had specific edge cases, or required special setup
+  - Omit for routine changes where "ran the tests" is sufficient
+  - Skip if automated tests cover the change adequately
 
 ## Example Templates
 
@@ -407,10 +513,16 @@ git diff --staged
 - Consider user's explanation of what problem this solves
 
 **Identify:**
+- **Change complexity** (simple fix, medium refactor, complex architecture change?)
 - Scope of changes (single file, multiple modules?)
 - Type of change (feature, bugfix, refactor, docs?)
 - Multiple logical changes? (Consider splitting)
 - Rationale explained in conversation vs what's in code
+
+**Determine detail level needed:**
+- Simple/obvious changes: Concise 2-4 sentence explanation
+- Medium complexity: 1-2 paragraph body
+- Complex/non-obvious: Full structured explanation with sections
 
 ### 2. Ask Key Questions
 
@@ -418,7 +530,7 @@ Check if answers are already in the conversation history. If not, consider:
 
 - What problem does this solve?
 - What's the user-visible behavior change?
-- Why is this approach better?
+- Why is this approach better? (Only if not obvious)
 - Are there side effects?
 - Should this be split into multiple commits?
 - Will someone years from now understand this?
@@ -428,6 +540,8 @@ Check if answers are already in the conversation history. If not, consider:
 - Rationale discussed during implementation
 - Trade-offs or alternatives considered
 - Issues encountered and resolved
+
+**Apply the "obvious test":** If something is immediately clear from reading the diff (like "changed X to Y"), don't repeat it in prose. Focus on the non-obvious: why the change was needed, what problem it solves, what alternatives were considered.
 
 ### 3. Draft Structure
 
@@ -451,15 +565,21 @@ Types: feat, fix, docs, style, refactor, test, chore
 ```
 
 **Body paragraphs** (72 char wrap):
-1. Lead paragraph - The main point
-2. Context - Before this change...
-3. Solution - Now...
-4. Implications - Side effects, future work
 
-**Metadata** (if applicable):
-- Test Plan
-- Bug references
-- Impact tags
+*For simple changes:*
+- 2-4 sentences: problem, solution, key context
+
+*For complex changes:*
+1. Lead paragraph - The main point
+2. Context - Before this change... (if not obvious)
+3. Solution - Now... (if not obvious from diff)
+4. Implications - Side effects, future work (if significant)
+
+**Optional sections** (only when they add value):
+- Changes: Bulleted list (only for multi-part changes where structure helps)
+- Test Plan: Only for complex/critical testing scenarios
+- Bug references and impact tags
+- Trade-offs or alternatives (for non-obvious decisions)
 
 ### 4. Review and Refine
 
@@ -493,11 +613,12 @@ Apply Conventional Commits format:
 - Footer: BREAKING CHANGE, issue references, etc.
 
 **Important:** Even with Conventional Commits format, apply all the core principles from this guide:
-- Explain the "why" not just the "what"
+- Explain the "why" not just the "what" (when non-obvious)
 - Use pyramid structure (most important info first)
-- Provide context: "Before this change..." vs "Now..."
+- Provide context: "Before this change..." vs "Now..." (when it adds clarity)
 - Ensure self-containment
-- Include rationale and side effects
+- Include rationale and side effects (when significant)
+- Match detail level to change complexity
 
 **Example:**
 ```
@@ -540,6 +661,14 @@ During development, use lighter commit messages as an "undo chain". Before pushi
 ### Incremental Improvement
 
 Don't aim for perfection. Adopt one new principle at a time. Incremental improvements compound over months into substantially better documentation practices.
+
+### The Goldilocks Principle
+
+**Too little:** "Fix bug" - Useless years later
+**Too much:** Multi-paragraph explanation of straightforward changes with obvious "Changes:" lists and routine "Test Plan:" sections
+**Just right:** Enough context to understand the change without external resources, proportional to complexity
+
+When in doubt, ask: "If I found this commit via git bisect in 2 years, what would I need to know that isn't obvious from the diff?"
 
 ### Plain Text Compatibility
 
