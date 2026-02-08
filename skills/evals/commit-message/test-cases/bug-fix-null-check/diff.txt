@@ -1,0 +1,37 @@
+diff --git a/src/payment/refund-handler.ts b/src/payment/refund-handler.ts
+index 7a3c9d2..4e8f1b3 100644
+--- a/src/payment/refund-handler.ts
++++ b/src/payment/refund-handler.ts
+@@ -45,12 +45,18 @@ export class RefundHandler {
+   async processRefund(refundRequest: RefundRequest): Promise<RefundResult> {
+     const { orderId, amount, paymentMethodId } = refundRequest;
+     
+-    // Get payment method details
+-    const paymentMethod = await this.db.paymentMethods.findById(paymentMethodId);
+-    
+     // Process refund with payment provider
+-    const result = await this.paymentProvider.refund({
+-      amount,
+-      paymentMethodToken: paymentMethod.token,
+-      currency: paymentMethod.currency,
+-    });
++    let result;
++    const paymentMethod = await this.db.paymentMethods.findById(paymentMethodId);
++    
++    if (paymentMethod) {
++      result = await this.paymentProvider.refund({
++        amount,
++        paymentMethodToken: paymentMethod.token,
++        currency: paymentMethod.currency,
++      });
++    } else {
++      // Use cached payment data from the original order
++      const order = await this.db.orders.findById(orderId);
++      result = await this.paymentProvider.refund({
++        amount,
++        paymentMethodToken: order.cachedPaymentToken,
++        currency: order.currency,
++      });
++    }
+     
+     return {

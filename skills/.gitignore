@@ -1,0 +1,5 @@
+node_modules/
+.promptfoo/
+promptfoo-*.json
+promptfoo-*.html
+results.json

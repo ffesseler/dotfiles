@@ -1,0 +1,19 @@
+description: "Commit-message skill evals (explicit prompt, 70% threshold)"
+
+prompts:
+  - file://evals/commit-message/prompt.txt
+
+providers:
+  - openrouter:anthropic/claude-sonnet-4.5
+
+tests:
+  - vars:
+      diff: file://evals/commit-message/test-cases/bug-fix-null-check/diff.txt
+      context: file://evals/commit-message/test-cases/bug-fix-null-check/context.md
+    assert:
+      - type: llm-rubric
+        value: file://evals/commit-message/grader.txt
+        threshold: 0.7  # Require 7/10 or higher to pass
+        provider: openrouter:anthropic/claude-sonnet-4.5
+
+outputPath: evals/commit-message/results.json
