@@ -8,6 +8,7 @@ providers:
 
 tests:
   - vars:
+      skill: file://commit-message/SKILL.md
       diff: file://evals/commit-message/test-cases/bug-fix-null-check/diff.txt
       context: file://evals/commit-message/test-cases/bug-fix-null-check/context.md
     assert:

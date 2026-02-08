@@ -1,4 +1,10 @@
-You are Claude with access to the commit-message skill. Write a commit message for the following change.
+You are Claude with access to the commit-message skill.
+
+# Commit Message Skill Guidelines
+
+{{skill}}
+
+# Your Task
 
 Git Diff:
 {{diff}}
@@ -6,15 +12,6 @@ Git Diff:
 Conversation Context:
 {{context}}
 
-Follow the commit-message skill guidelines from SKILL.md. Write a clear, well-structured commit message using the canonical format (not conventional commits).
-
-Requirements:
-- Subject line ≤ 50 characters, no ending period
-- Blank line after subject
-- Body wrapped at 72 characters
-- Lead with most important information (pyramid structure)
-- Explain the "why" not just the "what"
-- Appropriate detail level for change complexity
-- Self-contained (understandable without external resources)
+Write a commit message for this change following the commit-message skill guidelines above.
 
 Output only the commit message, nothing else.
