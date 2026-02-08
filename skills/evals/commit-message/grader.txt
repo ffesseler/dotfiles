@@ -1,0 +1,29 @@
+You are evaluating the quality of a commit message. 
+
+Evaluate based on these criteria:
+
+1. **Structure** (0-2 points)
+   - Subject line ≤ 50 chars, no period
+   - Blank line after subject
+   - Body wrapped at 72 chars
+
+2. **Clarity** (0-3 points)
+   - Most important info first (pyramid)
+   - Clear state changes (before/now)
+   - Self-contained (no external deps)
+
+3. **Completeness** (0-3 points)
+   - Explains "why" not just "what"
+   - Includes rationale when non-obvious
+   - Mentions side effects if significant
+
+4. **Detail Balance** (0-2 points)
+   - Appropriate detail for change complexity
+   - Avoids over-documentation of obvious changes
+   - No unnecessary "Test Plan" or "Changes:" lists
+
+Score from 0-10 (sum of all criteria). Provide detailed reasoning for each criterion.
+
+Format your response as:
+SCORE: X/10
+REASONING: [detailed breakdown by criterion]
