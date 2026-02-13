@@ -1,6 +1,6 @@
 ---
 name: commit-message
-description: Guide for writing clear, informative commit messages based on canonical sources (Simon Tatham's blog, OpenStack guidelines). Use when (1) creating git commits, (2) user asks about commit message writing, (3) reviewing or improving existing commit messages, (4) user wants guidance on commit message structure or content. Supports optional --format=conventional parameter for Conventional Commits (default is canonical format). Helps write messages that serve multiple audiences (users, reviewers, future developers) and remain valuable years later.
+description: Guide for writing clear, informative commit messages. Use when (1) creating git commits, (2) user asks about commit message writing, (3) reviewing or improving existing commit messages, (4) user wants guidance on commit message structure or content. Supports optional --format=conventional parameter for Conventional Commits (default is canonical format). Helps write messages that serve multiple audiences (users, reviewers, future developers) and remain valuable years later.
 ---
 
 # Commit Message Writing Guide
@@ -37,16 +37,16 @@ By default, this skill follows the canonical commit message structure from Simon
 
 **Subject Line (First Line)**
 - 50 characters maximum
-- No ending period
 - Make each commit distinguishable
 - Include ticket IDs if applicable
-- Add module prefix for multi-area projects
+- For default (non-conventional) format, do not use prefixes
 
 **Body**
 - Blank line after subject
 - 72-character line wrap
 - Lead with most important information (pyramid structure)
 - Explain the "why" not just the "how"
+- Use high-level, plain language before technical details
 - Plain text compatible (minimal Markdown)
 
 **One Logical Change Per Commit**
@@ -84,18 +84,18 @@ Maximum 50 characters. Make each commit distinguishable from others.
 **Patterns:**
 ```
 Fix crash when user profile is incomplete (#44142)
-auth: Switch libvirt get_cpu_info to config APIs
-NFC: Extract user authentication logic to separate module
+Switch CPU info lookup to config APIs
+Extract user authentication logic to separate module
 ```
 
 **Include:**
-- Module/component prefix for multi-area projects
 - Ticket/issue IDs in parentheses
-- "NFC:" prefix for No Functional Change (refactoring)
+- Clear high-level problem/solution wording
 
 **Avoid:**
 - Generic descriptions: "Bug fix", "Updates", "Changes"
 - Reusing ticket titles verbatim without context
+- Prefixes in default format (for example: `auth:`, `NFC:`)
 - Ending period
 
 ### Body Structure
@@ -204,6 +204,38 @@ Move authentication code from controllers to auth service.
 [Restates what the diff shows without explaining rationale]
 ```
 
+### Use High-Level Problem/Solution Language
+
+Write for broad understanding first, then add implementation details
+only when they are necessary.
+
+**Prefer:**
+- Plain language that a non-expert teammate can follow
+- Clear framing of the user/business problem and the chosen solution
+- Minimal jargon, acronyms, and internal code names
+
+**Avoid:**
+- Overly technical internals in the opening explanation
+- Dense implementation details without stating the actual problem
+- Messages that require deep codebase knowledge to understand
+
+**Good:**
+```
+Prevent failed checkouts when payment sessions expire
+
+Some users were dropped back to cart with no explanation when their
+payment session timed out. We now detect expired sessions earlier and
+show a clear retry path so checkout can continue safely.
+```
+
+**Too technical:**
+```
+Handle null PSP token in checkout orchestrator
+
+Add guard in PaymentSessionService.resolveToken() to short-circuit
+when provider payload omits psp_token and propagate RecoverableError.
+```
+
 ### State the Original Problem
 
 Make it clear what issue prompted the change.
@@ -249,7 +281,7 @@ but deleted methods caused null references.
 
 **Straightforward bug fixes:**
 ```
-Fix null check in payment refund handler
+Prevent refund crashes when payment method data is missing
 
 The code assumed payment_method_id was never null, causing crashes
 when processing refunds for deleted payment methods. Now we check
@@ -266,7 +298,7 @@ No behavioral changes.
 
 **Obvious improvements:**
 ```
-Add index on users(email) to improve login performance
+Speed up login for users with large account tables
 
 Login queries were doing full table scans. Added index reduces
 query time from 200ms to 5ms.
@@ -357,9 +389,9 @@ Add at the end of commit message when applicable:
 - `SecurityImpact` - Security-related changes
 - `UpgradeImpact` - Upgrade implications
 
-**Collaboration:**
-- `Co-Authored-By: Name <email>` - Multiple contributors
-- `Signed-off-by: Name <email>` - Developer Certificate of Origin
+**Authorship:**
+- Do not include co-author mentions in commit messages
+- Avoid `Co-Authored-By:` lines
 
 **Testing:**
 - `Test Plan:` - Document **non-obvious** or **critical** manual testing performed
@@ -408,7 +440,7 @@ Closes-Bug: #5678
 ### Refactoring (No Functional Change)
 
 ```
-NFC: Extract user authentication logic to separate module
+Simplify auth code to make future changes safer
 
 Move authentication code from controllers to dedicated auth service.
 This prepares for upcoming OAuth integration in ticket #9012.
@@ -429,8 +461,8 @@ and eliminating N+1 queries. Before this change, the dashboard
 made separate queries for each user's recent activity.
 
 Changes:
-- Add composite index on (user_id, created_at)
-- Use eager loading for activity associations
+- Add indexing for frequent dashboard lookups
+- Load related activity data in fewer queries
 - Cache frequently accessed user preferences
 
 Side effect: Database migration adds 50MB to index size, but
@@ -443,7 +475,7 @@ query performance in production staging
 ### Documentation Update
 
 ```
-docs: Update API authentication examples
+Update API authentication examples
 
 Replace outdated OAuth1 examples with OAuth2 flow. The OAuth1
 examples no longer work since we deprecated that authentication
@@ -639,7 +671,7 @@ Closes-Bug: #9012
 
 Follow the canonical structure from Simon Tatham and OpenStack:
 - Descriptive subject line (50 chars max)
-- Optional module prefix
+- No subject prefix (no `auth:`, `NFC:`, or similar)
 - Blank line
 - Body explaining context and rationale (72 char wrap)
 - Optional metadata tags
@@ -677,9 +709,3 @@ Since not all tools render Markdown:
 - Avoid tables or complex formatting
 - Backticks and underscores work acceptably
 - Test readability in plain text viewer
-
-## References
-
-Based on canonical sources:
-- Simon Tatham's "How to write good commit messages" (chiark.greenend.org.uk/~sgtatham/quasiblog/commit-messages/)
-- OpenStack GitCommitMessages wiki (wiki.openstack.org/wiki/GitCommitMessages)
