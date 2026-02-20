@@ -27,6 +27,23 @@ Step 3: User can edit items (modal + API + validation)
 
 Each step delivers a testable feature the user can try.
 
+### Tests Belong Inside Each Increment, Never Alone
+
+Never create a dedicated "Write tests" or "Add test coverage" step. Tests are part of the increment they validate.
+
+Avoid:
+```
+Step 3: User can edit items
+Step 4: Write tests for edit flow  ← ❌ separate test step
+```
+
+Prefer:
+```
+Step 3: User can edit items (modal + API + validation + tests)  ← ✅ tests included
+```
+
+If an increment involves code, its tests are listed as actions within that same increment.
+
 ### Keep Plans Concise
 
 Plans should be scannable and lightweight:
@@ -257,6 +274,7 @@ Before finalizing a plan, verify:
 - Unknowns and notable risks are called out in decisions or edge cases
 - Critical failure paths include fallback or retry behavior
 - The plan is concise enough to execute without re-reading large prose
+- **No step is solely dedicated to writing tests** — tests are embedded in the increment they validate
 
 ## Anti-Patterns
 
@@ -285,6 +303,23 @@ Instead, organize by user capability:
 ```markdown
 Step 1: User can view items (includes DB, API, UI)
 Step 2: User can search items
+```
+
+### Tests as a Separate Step
+
+Don't isolate tests into their own step:
+```markdown
+Step 4: Write tests
+```
+
+Instead, include them in the relevant increment:
+```markdown
+Step 2: User can filter list
+**Actions**:
+- Filter data based on search query
+- Update UI to show filtered results
+- Add unit tests for filter logic
+- Add integration test for search interaction
 ```
 
 ### Overly Verbose Explanations
