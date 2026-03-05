@@ -27,6 +27,18 @@ Step 3: User can edit items (modal + API + validation)
 
 Each step delivers a testable feature the user can try.
 
+### Keep Docs Honest, Not Comprehensive
+
+Don't create steps to write new functional documentation. Only flag doc updates when an increment makes existing docs obsolete or misleading.
+
+Acceptable doc actions within an increment:
+- Remove or update outdated sections in existing docs that the increment invalidates
+- Update `AGENT.md` / `CLAUDE.md` instructions if the increment changes how the agent should behave or operate
+
+Never add doc actions for:
+- Writing new feature documentation
+- Expanding or improving docs that are still accurate
+
 ### Tests Belong Inside Each Increment, Never Alone
 
 Never create a dedicated "Write tests" or "Add test coverage" step. Tests are part of the increment they validate.
@@ -275,6 +287,7 @@ Before finalizing a plan, verify:
 - Critical failure paths include fallback or retry behavior
 - The plan is concise enough to execute without re-reading large prose
 - **No step is solely dedicated to writing tests** — tests are embedded in the increment they validate
+- **Doc actions are conservative** — only included when an increment makes existing docs obsolete, or when `AGENT.md`/`CLAUDE.md` instructions need updating
 
 ## Anti-Patterns
 
