@@ -1,0 +1,38 @@
+{
+  "eval_id": 1,
+  "eval_name": "button-component-tour",
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "The response references button.tsx specifically — not a generic explanation",
+      "passed": true,
+      "evidence": "Entire tour is grounded in button.tsx — shows buttonVariants with compoundVariants from the actual file"
+    },
+    {
+      "text": "A real code snippet from button.tsx is shown inline",
+      "passed": true,
+      "evidence": "buttonVariants cva() definition with base classes, variants object, compoundVariants, and defaultVariants shown inline"
+    },
+    {
+      "text": "There is some contextual intro before diving into the code",
+      "passed": true,
+      "evidence": "2-paragraph intro explaining the component's purpose, what it's built with (CVA, Tailwind, Radix UI), and the design philosophy"
+    },
+    {
+      "text": "The response presents one focused section and stops (file must be under ~80 lines)",
+      "passed": true,
+      "evidence": "File is 57 lines. Section 1 only. Ends with 'I'll wait for your answer before moving to Section 2!'"
+    },
+    {
+      "text": "The response ends with a concrete quiz question about the Button component",
+      "passed": true,
+      "evidence": "Ends with: 'If a user renders <Button impact=\"primary\" mode=\"critical\" size=\"regular\" />, which classes get applied? (base styles, variant entries with actual classes, compound matches, and size)'"
+    },
+    {
+      "text": "The quiz question references something specific from the code shown (a variant, a prop, compoundVariants, etc.)",
+      "passed": true,
+      "evidence": "Question specifically references 'compound variant for { impact: \"primary\", mode: \"critical\" }' — directly from the compoundVariants snippet shown"
+    }
+  ],
+  "pass_rate": 1.0
+}

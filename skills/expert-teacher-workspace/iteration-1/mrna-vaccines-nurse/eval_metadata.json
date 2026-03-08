@@ -1,0 +1,13 @@
+{
+  "eval_id": 2,
+  "eval_name": "mrna-vaccines-nurse",
+  "prompt": "I'm a nurse and I want to really understand how mRNA vaccines work — like, from the basics to the actual molecular biology",
+  "assertions": [
+    {"id": "four-levels", "text": "Output contains all four depth levels (Level 1 through Level 4, or equivalent emoji/label markers)"},
+    {"id": "tldr-present", "text": "A TL;DR or one-sentence summary appears near the top, before the level sections"},
+    {"id": "level1-no-jargon", "text": "Level 1 section uses no unexplained technical terms — suitable for a 10-year-old"},
+    {"id": "ends-with-offer", "text": "The response ends with an invitation to go deeper or explore a related concept"},
+    {"id": "has-visual", "text": "At least one diagram, ASCII visual, Mermaid block, or structured illustration is included"},
+    {"id": "tailored-to-nurse", "text": "Levels 3 and/or 4 use clinical or biological vocabulary appropriate for a nurse (e.g., ribosome, antigen, immune response, T cells, spike protein), rather than staying at a pure layperson level"}
+  ]
+}

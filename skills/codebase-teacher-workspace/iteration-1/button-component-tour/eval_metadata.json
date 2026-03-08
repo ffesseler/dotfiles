@@ -1,0 +1,6 @@
+{
+  "eval_id": 1,
+  "eval_name": "button-component-tour",
+  "prompt": "I'm new to this codebase. Can you walk me through how the Button component works? I want to understand all its variants and how it's built.",
+  "assertions": []
+}

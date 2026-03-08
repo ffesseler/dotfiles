@@ -1,0 +1,38 @@
+{
+  "eval_id": 1,
+  "eval_name": "button-component-tour",
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "The response references button.tsx (or the Button component) specifically — not a generic explanation",
+      "passed": true,
+      "evidence": "Entire tour is grounded in button.tsx — shows buttonVariants, compoundVariants, the function itself, usage examples. Very codebase-specific."
+    },
+    {
+      "text": "A real code snippet from button.tsx is shown inline",
+      "passed": true,
+      "evidence": "Multiple real snippets: buttonVariants cva call, compoundVariants list, Button function, variant matrix, usage examples."
+    },
+    {
+      "text": "There is some contextual intro before diving into the code (what the component does, what pattern it uses)",
+      "passed": true,
+      "evidence": "Architecture overview section explains CVA, Tailwind, Radix UI context before code details."
+    },
+    {
+      "text": "The response presents one focused section and stops — it does not walk through everything in one shot",
+      "passed": false,
+      "evidence": "FAIL: 9-section comprehensive document produced in one shot. Sections 1-9 all written without any pause or question checkpoint."
+    },
+    {
+      "text": "The response ends with a concrete quiz question about the Button component",
+      "passed": false,
+      "evidence": "FAIL: Response ends with a summary of what was documented. No quiz questions anywhere in the response."
+    },
+    {
+      "text": "The quiz question references something specific from the code shown (a variant, a prop, compoundVariants, etc.)",
+      "passed": false,
+      "evidence": "FAIL: No quiz question present at all."
+    }
+  ],
+  "pass_rate": 0.5
+}

@@ -1,0 +1,6 @@
+{
+  "eval_id": 0,
+  "eval_name": "cva-guided-tour",
+  "prompt": "Let's do a deep dive into CVA. I don't know anything about it. Create me a guided tour on how CVA is used in the app, given I don't know how it's used in the app. You should explain me what it is, how it works, and how it's implemented in the app. Ask me relevant questions to test my knowledge after each section of the guided tour",
+  "assertions": []
+}

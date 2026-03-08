@@ -1,0 +1,38 @@
+{
+  "eval_id": 0,
+  "eval_name": "cva-guided-tour",
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "The response references at least one real file from the codebase (e.g. badge.tsx, button.tsx) by name — not just generic library docs",
+      "passed": true,
+      "evidence": "Explicitly references badge.tsx ('Let's look at the Badge component') and button.tsx, and ButtonIcon — all real files from packages/ui/src/components/"
+    },
+    {
+      "text": "A real code snippet from the codebase is shown inline (not just a file path reference)",
+      "passed": true,
+      "evidence": "Full badgeVariants cva() definition shown inline, full buttonVariants cva() with compoundVariants shown inline, full Button component function shown inline"
+    },
+    {
+      "text": "There is a brief plain-language intro explaining what CVA is and why it exists before the code tour begins",
+      "passed": true,
+      "evidence": "Solid intro: explains the problem (36 combinations), shows the if/else mess it replaces, explains what CVA does instead. 3 good paragraphs."
+    },
+    {
+      "text": "The response contains only Section 1 (or equivalent first section) — it does NOT dump all sections at once",
+      "passed": false,
+      "evidence": "FAIL: Response contains Section 1, Section 2, Section 3, key takeaways, and a full wrap-up — all in the first response. Never paused to wait for user answers."
+    },
+    {
+      "text": "The response ends with a concrete, specific quiz question about the code just shown — not 'does that make sense?' but something actionable like 'where would you add X?'",
+      "passed": false,
+      "evidence": "FAIL: Response does not end with a quiz question — it ends with 'What's next?' open-ended suggestions. While each section has quiz questions, the response ran all the way through without pausing."
+    },
+    {
+      "text": "The quiz question references a specific element from the code snippet shown (a variant name, a function call, a prop, etc.)",
+      "passed": false,
+      "evidence": "FAIL: No single closing question to evaluate — the response is complete and doesn't pause for interaction. Individual section questions (e.g. 'what classes for secondary/critical/regular?') are good but never waited for."
+    }
+  ],
+  "pass_rate": 0.5
+}

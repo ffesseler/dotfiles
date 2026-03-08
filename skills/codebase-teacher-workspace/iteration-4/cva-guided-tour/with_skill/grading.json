@@ -1,0 +1,38 @@
+{
+  "eval_id": 0,
+  "eval_name": "cva-guided-tour",
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "The response references at least one real file from the codebase (e.g. badge.tsx, button.tsx) by name — not just generic library docs",
+      "passed": true,
+      "evidence": "References badge.tsx directly: 'Section 1: The simplest example — badge.tsx'"
+    },
+    {
+      "text": "A real code snippet from the codebase is shown inline (not just a file path reference)",
+      "passed": true,
+      "evidence": "Full badgeVariants cva() definition and Badge function component shown inline from the actual file"
+    },
+    {
+      "text": "There is a brief plain-language intro explaining what CVA is and why it exists before the code tour begins",
+      "passed": true,
+      "evidence": "3-paragraph intro covering: what CVA solves, how it works, where it's used in this codebase"
+    },
+    {
+      "text": "The response contains only Section 1 — it does NOT dump all sections at once (file must be under ~80 lines)",
+      "passed": true,
+      "evidence": "File is 70 lines. Section 1 only. No Section 2 or further content."
+    },
+    {
+      "text": "The response ends with a concrete, specific quiz question about the code just shown",
+      "passed": true,
+      "evidence": "Ends with: 'if you wanted to add a `success` variant with a green background and white text, where in the `badgeVariants` definition would you add it, and what would that new entry look like?'"
+    },
+    {
+      "text": "The quiz question references a specific element from the code snippet shown (a variant name, a function call, a prop, etc.)",
+      "passed": true,
+      "evidence": "Question references 'badgeVariants definition' and the 'destructive' variant shown in the snippet as a model"
+    }
+  ],
+  "pass_rate": 1.0
+}

@@ -1,0 +1,38 @@
+{
+  "eval_id": 2,
+  "eval_name": "mrna-vaccines-nurse",
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "Output contains all four depth levels (Level 1 through Level 4, or equivalent emoji/label markers)",
+      "passed": true,
+      "evidence": "All four levels present with emoji headers: 🧒 Level 1, 🎒 Level 2, 🎓 Level 3, 🔬 Level 4"
+    },
+    {
+      "text": "A TL;DR or one-sentence summary appears near the top, before the level sections",
+      "passed": true,
+      "evidence": "**TL;DR:** mRNA vaccines are a new class of vaccines that work by delivering a genetic instruction set directly into your cells..."
+    },
+    {
+      "text": "Level 1 section uses no unexplained technical terms — suitable for a 10-year-old",
+      "passed": true,
+      "evidence": "Level 1 uses the 'security guards and blueprint' analogy with no jargon. Terms like 'immune cells' are used but immediately paraphrased in the analogy."
+    },
+    {
+      "text": "The response ends with an invitation to go deeper or explore a related concept",
+      "passed": true,
+      "evidence": "Ends with a detailed offer: '*Want me to go deeper on any level, or explore a related concept? For instance, I could dive into: spike protein structure, how to counsel patients on side effects...*'"
+    },
+    {
+      "text": "At least one diagram, ASCII visual, Mermaid block, or structured illustration is included",
+      "passed": true,
+      "evidence": "Level 3 contains a detailed ASCII timeline diagram: 'mRNA Vaccine Timeline' showing injection → translation → innate response → adaptive response → memory formation. Also a comparison table vs. traditional vaccines."
+    },
+    {
+      "text": "Levels 3 and/or 4 use clinical or biological vocabulary appropriate for a nurse (e.g., ribosome, antigen, immune response, T cells, spike protein), rather than staying at a pure layperson level",
+      "passed": true,
+      "evidence": "Level 3 contains: 5' cap, poly(A) tail, UTRs, lipid nanoparticles, TLR3/7/8, MHC-I/II, CD4+/CD8+ T cells, IgG, germinal centers, somatic hypermutation. Level 4 adds: pseudouridine, codon optimization, PKR, LNP tissue tropism, plasma cell half-life, LLPC bone marrow niches, Th1/Th2 skewing."
+    }
+  ],
+  "pass_rate": 1.0
+}

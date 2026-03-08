@@ -1,0 +1,33 @@
+{
+  "skill_name": "codebase-teacher",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Let's do a deep dive into CVA. I don't know anything about it. Create me a guided tour on how CVA is used in the app, given I don't know how it's used in the app. You should explain me what it is, how it works, and how it's implemented in the app. Ask me relevant questions to test my knowledge after each section of the guided tour",
+      "expected_output": "A brief concept intro (3 paragraphs max) explaining what CVA is and why it exists. Then Section 1 only — a real code snippet from the codebase, an explanation, and a concrete quiz question. The response must stop there and wait for the user's answer.",
+      "files": [],
+      "assertions": [
+        {"id": "explores-codebase", "text": "The response references at least one real file from the codebase (e.g. badge.tsx, button.tsx) by name — not just generic library docs"},
+        {"id": "shows-real-code", "text": "A real code snippet from the codebase is shown inline (not just a file path reference)"},
+        {"id": "concept-intro-present", "text": "There is a brief plain-language intro explaining what CVA is and why it exists before the code tour begins"},
+        {"id": "section-1-only", "text": "The response contains only Section 1 — it does NOT dump all sections at once (file must be under ~80 lines)"},
+        {"id": "ends-with-question", "text": "The response ends with a concrete, specific quiz question about the code just shown"},
+        {"id": "question-references-code", "text": "The quiz question references a specific element from the code snippet shown (a variant name, a function call, a prop, etc.)"}
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I'm new to this codebase and I want to understand how the Button component is built. Can you teach me? Ask me questions as we go to make sure I'm following.",
+      "expected_output": "A brief intro about the Button component and what patterns it uses. Then Section 1 only — a focused code snippet from button.tsx, an explanation, and a concrete quiz question. The response must stop there.",
+      "files": [],
+      "assertions": [
+        {"id": "explores-codebase", "text": "The response references button.tsx specifically — not a generic explanation"},
+        {"id": "shows-real-code", "text": "A real code snippet from button.tsx is shown inline"},
+        {"id": "concept-intro-present", "text": "There is some contextual intro before diving into the code"},
+        {"id": "section-1-only", "text": "The response presents one focused section and stops (file must be under ~80 lines)"},
+        {"id": "ends-with-question", "text": "The response ends with a concrete quiz question about the Button component"},
+        {"id": "question-references-code", "text": "The quiz question references something specific from the code shown"}
+      ]
+    }
+  ]
+}

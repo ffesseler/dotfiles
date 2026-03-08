@@ -1,0 +1,102 @@
+{
+  "metadata": {
+    "skill_name": "expert-teacher",
+    "skill_path": "/Users/ffesseler/.pi/agent/skills/expert-teacher",
+    "executor_model": "claude-sonnet-4-6",
+    "timestamp": "2026-03-08T21:10:00Z",
+    "evals_run": ["entropy", "public-key-crypto", "mrna-vaccines-nurse"],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "eval_name": "entropy",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 96,
+        "tokens": null,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Output contains all four depth levels", "passed": true, "evidence": "All four emoji-labeled levels present"},
+        {"text": "TL;DR near top before levels", "passed": true, "evidence": "TL;DR on second line"},
+        {"text": "Level 1 jargon-free", "passed": true, "evidence": "Crayon/bag analogy only, no technical terms"},
+        {"text": "Ends with offer to go deeper", "passed": true, "evidence": "Italic closing offer with specific suggestions"},
+        {"text": "Contains diagram or visual", "passed": true, "evidence": "ASCII table + microstate code block in Level 3"}
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "public-key-crypto",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 116,
+        "tokens": null,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Output contains all four depth levels", "passed": true, "evidence": "All four emoji-labeled levels present"},
+        {"text": "TL;DR near top before levels", "passed": true, "evidence": "TL;DR on second line"},
+        {"text": "Level 1 jargon-free", "passed": true, "evidence": "Magic padlock analogy, no jargon"},
+        {"text": "Ends with offer to go deeper", "passed": true, "evidence": "Closing offer with 4 specific directions"},
+        {"text": "Contains diagram or visual", "passed": true, "evidence": "ASCII flows, DH walkthrough, cert chain diagram"}
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "mrna-vaccines-nurse",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 70,
+        "tokens": null,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Output contains all four depth levels", "passed": true, "evidence": "All four emoji-labeled levels present"},
+        {"text": "TL;DR near top before levels", "passed": true, "evidence": "TL;DR on second line"},
+        {"text": "Level 1 jargon-free", "passed": true, "evidence": "Security guard / blueprint analogy"},
+        {"text": "Ends with offer to go deeper", "passed": true, "evidence": "Closes with nurse-specific follow-up suggestions"},
+        {"text": "Contains diagram or visual", "passed": true, "evidence": "ASCII vaccine timeline + comparison table"},
+        {"text": "Levels 3/4 tailored to nurse background", "passed": true, "evidence": "Pseudouridine, CD4/CD8, MHC-I/II, LNP tropism, germinal centers"}
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 94.0, "stddev": 19.0, "min": 70.0, "max": 116.0},
+      "tokens": {"mean": null, "stddev": null, "min": null, "max": null}
+    },
+    "delta": {
+      "pass_rate": "N/A (no baseline — skill is globally installed)",
+      "time_seconds": "N/A",
+      "tokens": "N/A"
+    }
+  },
+  "notes": [
+    "No true baseline available: skill is installed globally in ~/.pi/agent/skills, so all pi runs use it",
+    "All 16 assertions passed across 3 evals (5 per eval for evals 0-1, 6 for eval 2)",
+    "Level 1 jargon-free assertion is consistently passing — skill is effective at tone-switching",
+    "Background-tailoring works well: mRNA eval correctly deployed nursing-level clinical vocabulary in Levels 3-4",
+    "Response lengths are substantial (entropy: ~216 lines, crypto: ~263 lines, mRNA: ~313 lines) — appropriate for the format",
+    "Consider whether very long responses might be a UX concern for some users (a 'brief' mode could be explored)"
+  ]
+}
