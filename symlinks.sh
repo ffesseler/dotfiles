@@ -209,6 +209,27 @@ main() {
 
   unset FILES_TO_SYMLINK
 
+  # Symlink scripts/ to ~/.local/bin/
+  print_info "Linking scripts to ~/.local/bin"
+  mkdir -p "$HOME/.local/bin"
+  for script in "$DOTFILES_DIR/scripts/"*; do
+    local name
+    name="$(basename "$script")"
+    local target="$HOME/.local/bin/$name"
+    if [ ! -e "$target" ]; then
+      execute "ln -fs $script $target" "$target → $script"
+    elif [ "$(readlink "$target")" == "$script" ]; then
+      print_success "$target → $script"
+    else
+      ask_for_confirmation "'$target' already exists, do you want to overwrite it?"
+      if answer_is_yes; then
+        rm -rf "$target"
+        execute "ln -fs $script $target" "$target → $script"
+      else
+        print_error "$target → $script"
+      fi
+    fi
+  done
 
 }
 main

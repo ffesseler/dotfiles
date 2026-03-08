@@ -1,0 +1,284 @@
+#!/usr/bin/env bun
+/**
+ * xthread — Summarize an X (Twitter) thread using xurl + pi
+ *
+ * Usage:
+ *   xthread <tweet-id-or-url> [--app <xurl-app>] [--raw] [--out <file>]
+ */
+
+import { spawnSync } from "child_process";
+
+// ─── CLI args ────────────────────────────────────────────────────────────────
+
+const args = process.argv.slice(2);
+
+if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
+  console.log(`
+xthread — Summarize an X thread
+
+Usage:
+  xthread <tweet-id-or-url> [options]
+
+Options:
+  --app <name>   xurl app to use (default: your xurl default)
+  --raw          Print raw thread text before the summary
+  --out <file>   Save the summary to a file
+  -h, --help     Show this help
+
+Examples:
+  xthread 1234567890123456789
+  xthread https://x.com/user/status/1234567890123456789
+  xthread 1234567890 --app my-app --out summary.md
+`);
+  process.exit(0);
+}
+
+let threadIdOrUrl = "";
+let xurlApp = "";
+let showRaw = false;
+let outFile = "";
+
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === "--app" && args[i + 1])  { xurlApp = args[++i]; }
+  else if (args[i] === "--out" && args[i + 1]) { outFile = args[++i]; }
+  else if (args[i] === "--raw")  { showRaw = true; }
+  else if (!args[i].startsWith("--")) { threadIdOrUrl = args[i]; }
+}
+
+if (!threadIdOrUrl) {
+  console.error("❌  Please provide a tweet ID or URL.");
+  process.exit(1);
+}
+
+const tweetId = threadIdOrUrl.match(/(\d{10,})/)?.[1] ?? threadIdOrUrl;
+if (!/^\d+$/.test(tweetId)) {
+  console.error(`❌  Could not extract a valid tweet ID from: ${threadIdOrUrl}`);
+  process.exit(1);
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function color(code: number, text: string) { return `\x1b[${code}m${text}\x1b[0m`; }
+const bold   = (s: string) => color(1, s);
+const dim    = (s: string) => color(2, s);
+const cyan   = (s: string) => color(36, s);
+const green  = (s: string) => color(32, s);
+const yellow = (s: string) => color(33, s);
+
+function xurlGet(path: string): any {
+  const xurlArgs = xurlApp ? ["--app", xurlApp, path] : [path];
+  const r = spawnSync("xurl", xurlArgs, { encoding: "utf8" });
+  if (r.status !== 0) throw new Error(`xurl request failed for ${path}\n${r.stderr?.trim()}`);
+  try { return JSON.parse(r.stdout); }
+  catch { throw new Error(`Could not parse xurl response:\n${r.stdout}`); }
+}
+
+// ─── Step 1: Fetch root tweet ─────────────────────────────────────────────────
+
+console.log(bold("\n🔍  Fetching root tweet…"));
+
+const rootPath =
+  `/2/tweets/${tweetId}` +
+  `?tweet.fields=conversation_id,author_id,created_at,text,entities,public_metrics` +
+  `&expansions=author_id` +
+  `&user.fields=name,username`;
+
+let rootData: any;
+try { rootData = xurlGet(rootPath); }
+catch (e: any) { console.error(`❌  ${e.message}`); process.exit(1); }
+
+const rootTweet  = rootData.data;
+const rootAuthor = rootData.includes?.users?.[0];
+const conversationId = rootTweet?.conversation_id ?? tweetId;
+
+if (!rootTweet) {
+  console.error("❌  Could not retrieve the root tweet. Check the ID and your authentication.");
+  process.exit(1);
+}
+
+// ─── Step 2: Fetch full thread ────────────────────────────────────────────────
+
+console.log(bold(`🧵  Fetching thread (conversation_id: ${conversationId})…`));
+
+interface Tweet {
+  id: string;
+  text: string;
+  created_at: string;
+  author_id: string;
+  public_metrics?: { like_count: number; retweet_count: number; reply_count: number; };
+  entities?: { urls?: Array<{ url: string; expanded_url: string; display_url: string }> };
+}
+interface User { id: string; name: string; username: string; }
+
+const tweets: Tweet[] = [rootTweet];
+const usersMap: Record<string, User> = {};
+if (rootAuthor) usersMap[rootAuthor.id] = rootAuthor;
+
+let nextToken: string | undefined;
+do {
+  const paging = nextToken ? `&next_token=${nextToken}` : "";
+  const searchPath =
+    `/2/tweets/search/recent` +
+    `?query=conversation_id:${conversationId}` +
+    `&tweet.fields=author_id,created_at,text,entities,public_metrics` +
+    `&expansions=author_id` +
+    `&user.fields=name,username` +
+    `&max_results=100` + paging;
+
+  let page: any;
+  try { page = xurlGet(searchPath); }
+  catch (e: any) {
+    console.warn(yellow(`⚠️  Could not fetch full conversation: ${e.message}`));
+    console.warn(yellow("   Summarising the root tweet only."));
+    break;
+  }
+
+  for (const u of page.includes?.users ?? []) usersMap[u.id] = u;
+  for (const t of (page.data ?? []) as Tweet[]) {
+    if (t.id !== tweetId) tweets.push(t);
+  }
+  nextToken = page.meta?.next_token;
+} while (nextToken);
+
+tweets.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+console.log(green(`✅  Retrieved ${tweets.length} tweet(s)`));
+
+// ─── Step 3: Collect external URLs ───────────────────────────────────────────
+
+const seenUrls = new Set<string>();
+const allUrls: string[] = [];
+for (const t of tweets) {
+  for (const u of t.entities?.urls ?? []) {
+    const expanded = u.expanded_url ?? u.display_url ?? u.url;
+    if (!seenUrls.has(expanded) &&
+        !expanded.startsWith("https://x.com/") &&
+        !expanded.startsWith("https://twitter.com/")) {
+      seenUrls.add(expanded);
+      allUrls.push(expanded);
+    }
+  }
+}
+
+// ─── Step 4: Build structured thread text ────────────────────────────────────
+
+const threadAuthorId = rootTweet.author_id;
+
+function label(authorId: string): string {
+  const u = usersMap[authorId];
+  return u ? `@${u.username} (${u.name})` : `[user:${authorId}]`;
+}
+
+function expandUrls(text: string, entities?: Tweet["entities"]): string {
+  if (!entities?.urls) return text;
+  let out = text;
+  for (const u of entities.urls) out = out.replaceAll(u.url, u.expanded_url ?? u.display_url ?? u.url);
+  return out;
+}
+
+const authorTweets = tweets.filter(t => t.author_id === threadAuthorId);
+const replyTweets  = tweets
+  .filter(t => t.author_id !== threadAuthorId)
+  .sort((a, b) => (b.public_metrics?.like_count ?? 0) - (a.public_metrics?.like_count ?? 0));
+
+function renderTweets(list: Tweet[], heading: string): string {
+  if (list.length === 0) return `### ${heading}\n(none)`;
+  return `### ${heading}\n` + list.map((t, i) => {
+    const body    = expandUrls(t.text, t.entities);
+    const likes   = t.public_metrics?.like_count ?? 0;
+    return `[${i + 1}] ${label(t.author_id)} — ❤️ ${likes}\n${body}`;
+  }).join("\n\n");
+}
+
+const threadText =
+  `## THREAD AUTHOR: ${label(threadAuthorId)} (${authorTweets.length} post(s))\n\n` +
+  renderTweets(authorTweets, "Author's posts") +
+  `\n\n## REPLIES FROM OTHERS (${replyTweets.length} post(s), sorted by likes)\n\n` +
+  renderTweets(replyTweets, "Replies");
+
+const urlSection = allUrls.length > 0
+  ? `\n\n## EXTERNAL LINKS\n` + allUrls.map((u, i) => `[L${i + 1}] ${u}`).join("\n")
+  : "";
+
+const fullThreadText = threadText + urlSection;
+
+// ─── Step 5: Print raw thread (optional) ─────────────────────────────────────
+
+if (showRaw) {
+  console.log("\n" + bold("─── Raw Thread ─────────────────────────────────"));
+  console.log(dim(fullThreadText));
+  console.log(bold("────────────────────────────────────────────────\n"));
+}
+
+// ─── Step 6: Summarize with pi ────────────────────────────────────────────────
+
+console.log(bold("🤖  Summarizing with pi (gemini-3.1-flash-lite-preview)…\n"));
+
+const systemPrompt =
+  "You are an expert at summarizing X (Twitter) threads concisely. " +
+  "Respond in clean Markdown. Do not add commentary outside the requested sections.";
+
+const userPrompt =
+  `Please summarize the following X thread. The content is split into two sections: ` +
+  `the thread author's own posts, and replies from other people. ` +
+  `Replies are sorted by like count (most liked first) — prioritize the top-liked replies ` +
+  `when choosing representative quotes and summarizing community reactions.\n\n` +
+  `Return exactly these sections in Markdown:\n\n` +
+  `## TL;DR\n1–3 sentences capturing the core message of the thread.\n\n` +
+  `## Author's Perspective\n` +
+  `What the thread author is saying, arguing, or sharing. Include 2–3 direct illustrative ` +
+  `quotes from their posts (use > blockquote format). Focus on their main ideas and narrative arc.\n\n` +
+  `## Community Reactions\n` +
+  `What other people are saying in reply — agreement, pushback, questions, additions. ` +
+  `Include 2–3 direct illustrative quotes from the most-liked replies ` +
+  `(use > blockquote format, and append the ❤️ count after each quote). ` +
+  `Highlight the range of reactions if they differ.\n\n` +
+  `## Key Takeaways\n3–5 bullet points distilling the most important insights from the whole conversation.\n\n` +
+  `## Thread Info\n` +
+  `- Author: (main author @handle)\n` +
+  `- Author posts: (count)\n` +
+  `- Replies from others: (count)\n` +
+  `- Posted: (approximate date/time of first tweet)\n\n` +
+  `## Links\n` +
+  `For each external URL in the thread, list it with a brief description of what it is or what it's about. ` +
+  `If there are no external links, write "No external links."\n\n` +
+  `---\n\nThread content:\n\n${fullThreadText}`;
+
+const piResult = spawnSync(
+  "pi",
+  ["--print", "--no-session", "--no-tools", "--model", "gemini-3.1-flash-lite-preview",
+   "--system-prompt", systemPrompt, userPrompt],
+  { encoding: "utf8", maxBuffer: 10 * 1024 * 1024 }
+);
+
+if (piResult.status !== 0) {
+  console.error("❌  pi failed:\n" + piResult.stderr);
+  process.exit(1);
+}
+
+const summary = piResult.stdout.trim();
+
+// ─── Step 7: Output ───────────────────────────────────────────────────────────
+
+const threadUrl = rootAuthor
+  ? `https://x.com/${rootAuthor.username}/status/${tweetId}`
+  : `https://x.com/i/web/status/${tweetId}`;
+
+const header = `# Thread Summary\n**URL:** ${threadUrl}\n**Generated:** ${new Date().toLocaleString()}\n\n`;
+const finalOutput = header + summary;
+
+const glowPath = spawnSync("which", ["glow"], { encoding: "utf8" }).stdout.trim();
+if (glowPath) {
+  const tmp = `/tmp/xthread-${Date.now()}.md`;
+  await Bun.write(tmp, finalOutput);
+  spawnSync("glow", [tmp], { stdio: "inherit" });
+  spawnSync("rm", [tmp]);
+} else {
+  console.log("\n" + cyan(bold("═══════════════════════════════════════════════════")));
+  console.log(finalOutput);
+  console.log(cyan(bold("═══════════════════════════════════════════════════")) + "\n");
+}
+
+if (outFile) {
+  await Bun.write(outFile, finalOutput);
+  console.log(green(`💾  Summary saved to: ${outFile}`));
+}
