@@ -46,7 +46,8 @@ echo "📦 Installing skills from external repositories..."
 EXTERNAL_SKILLS=(
     "https://github.com/anthropics/skills/tree/main/skills/skill-creator"
     "https://github.com/nicobailon/surf-cli/tree/main/skills/surf"
-    "https://github.com/elithrar/dotfiles/tree/main/.config/opencode/skill/web-perf"
+    "https://github.com/elithrar/dotfiles/tree/main/.agents/skills/web-perf"
+    "https://github.com/danpeg/bug-hunt"
 )
 
 for skill in "${EXTERNAL_SKILLS[@]}"; do

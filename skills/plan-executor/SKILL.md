@@ -14,7 +14,7 @@ Follow this cycle for each step:
 1. Import plan
 2. Select next step
 3. Propose detailed plan
-4. Create substeps if useful
+4. Create substeps (mandatory for steps spanning multiple change areas)
 5. Implement
 6. Validate with user
 7. Mark complete
@@ -83,15 +83,77 @@ Response handling:
 - Adjust (`change X`, `add Y`): revise and re-propose.
 - Defer (`skip this for now`): set status back to `pending`, then pick next step.
 
-## Create Substeps (Optional)
+## Create Substeps (Mandatory for Broad Steps)
 
 After the user approves the detailed plan for a step:
 
-1. If the step has multiple concrete actions, create substeps to track execution.
-2. Use the same status lifecycle as top-level steps: `pending` -> `in_progress` -> `completed`.
-3. Name substeps with the parent prefix (for example `Step 2.1`, `Step 2.2`).
-4. Keep exactly one active item (`in_progress`) at any time across steps and substeps.
-5. Do not create a new detailed plan for each substep. Substeps execute directly from the parent step's approved detailed plan.
+1. Assess the **breadth of changes**, not just file count. If the step spans **multiple distinct change areas** (for example: SQL migration, repository, service, tests), you **must** propose substeps before implementing. A step that touches 3 files but crosses SQL → repo → service is too broad; a step that touches 6 files to add a field to DTOs is fine.
+2. Group actions into substeps that are **coherent and independently testable**. Each substep should leave the codebase in a valid, runnable state.
+3. Use the same status lifecycle as top-level steps: `pending` -> `in_progress` -> `completed`.
+4. Name substeps with the parent prefix (for example `Step 2.1`, `Step 2.2`).
+5. Keep exactly one active item (`in_progress`) at any time across steps and substeps.
+6. Do not create a new detailed plan for each substep. Substeps execute directly from the parent step's approved detailed plan.
+7. Present the proposed substep breakdown to the user for approval before implementing.
+
+### When to Create Substeps
+
+Create substeps when a step has **more than ~2 distinct change areas**. Common signals:
+
+- SQL migration + application code
+- Schema/data changes + type generation
+- Backend + frontend
+- Library code + consumer integration
+- Multiple independent domain concepts added at once
+
+Do NOT create substeps for steps that are one coherent change, even if many files are touched (e.g., renaming a symbol across 10 files).
+
+### Substep Cohesion Rules
+
+Substeps must group related changes so each unit is meaningful and testable on its own:
+
+- **Keep tests with their implementation.** If a substep adds a function or component, include its tests in the same substep — never defer tests to a later substep.
+- **Keep type generation with the step that needs it.** If a step involves a migration and a generated type, keep both in the same substep. Do not split "run migration" from "regenerate types".
+- **Keep a UI change with its supporting logic.** If a new screen requires a new hook, group the hook and the screen in the same substep.
+- **Keep related config changes together.** If a feature needs route registration and layout changes, group them.
+- **It is OK to split by domain boundary.** For example, if a step touches both an API layer and a UI layer, and the API work is self-contained and testable independently, that can be a separate substep.
+
+### Substep Breakdown Pattern
+
+Use a **layer-by-layer** progression, keeping each layer testable before moving to the next:
+
+```
+7.1 — Schema/data layer + generated artifacts
+     Migration + type generation + local DB validation
+
+7.2 — Data access layer + its tests
+     Repository mapping + repository tests
+
+7.3 — Business/service layer + its tests
+     Service logic + service tests
+
+7.4 — Final validation
+     Combined targeted tests + type-check + plan update
+```
+
+Each substep builds on the previous one and is independently testable. The final substep is a cross-layer validation that confirms everything works together.
+
+### Good Substep Splits
+
+| Too Fine ❌ | Coherent ✅ |
+|---|---|
+| Step 2.1: Add `useAuth` hook | Step 2.1: Add `useAuth` hook + its unit tests |
+| Step 2.2: Write tests for `useAuth` | Step 2.2: Wire `useAuth` into LoginScreen + integration test |
+| Step 3.1: Run database migration | Step 3.1: Run migration + regenerate types + verify generated output |
+| Step 3.2: Regenerate types | Step 3.2: Build API endpoints using new types + endpoint tests |
+| Step 4.1: Create component file | Step 4.1: Create component + its stories/tests |
+| Step 4.2: Add component styles | Step 4.2: Integrate component into parent screen |
+
+### Bad Substep Splits (Avoid)
+
+- Separating interface/types from their consumers
+- Putting a bug fix in one substep and its regression test in another
+- Splitting a single React component across substeps (e.g., props in one, rendering in another)
+- Isolating imports/exports as their own substep
 
 ## Implement
 
@@ -203,6 +265,21 @@ Report what changed, what was validated, and what decision is needed next.
 
 - Bad: "update component".
 - Good: specify file, concrete change, and validation.
+
+### Implementing Broad Steps Without Substeps
+
+- Bad: implement a step spanning SQL + repo + service + tests as one monolithic chunk with a single validation checkpoint.
+- Good: propose layer-by-layer substeps so each change area is testable and reviewable independently.
+
+### Splitting Tests From Implementation
+
+- Bad: Substep A adds `useAuth` hook, Substep B adds its tests.
+- Good: One substep includes both the hook and its tests.
+
+### Splitting Generated Artifacts From Their Triggers
+
+- Bad: Substep A runs a migration, Substep B regenerates types from it.
+- Good: One substep runs the migration, regenerates types, and verifies the generated output.
 
 ## See Also
 

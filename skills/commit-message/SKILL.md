@@ -48,6 +48,7 @@ By default, this skill follows the canonical commit message structure from Simon
 - Explain the "why" not just the "how"
 - Use high-level, plain language before technical details
 - Plain text compatible (minimal Markdown)
+- Do not add `Validation:`, `Test Plan:`, or testing paragraphs by default
 
 **One Logical Change Per Commit**
 - Split whitespace changes from functional changes
@@ -103,7 +104,7 @@ Extract user authentication logic to separate module
 1. **Blank line** after subject line (required)
 2. **Lead paragraph** - Most important information first
 3. **Details** - Explanation, rationale, side effects
-4. **Optional sections** - Test Plan, references, metadata
+4. **Optional sections** - References or metadata only when useful
 5. **Wrap at 72 characters** for plain text compatibility
 
 ### Pyramid Structure
@@ -324,9 +325,6 @@ Trade-offs:
 - Adds Redis dependency (acceptable for scalability needs)
 - Slightly slower session access (~5ms overhead)
 - Sessions survive deployments and instance failures
-
-Test Plan: Load tested with 10k concurrent users, verified session
-persistence across deployments, tested Redis failover scenarios.
 ```
 
 **Non-obvious solutions:**
@@ -358,8 +356,6 @@ because it handles edge cases (e.g., event handlers, data: URLs,
 encoded characters).
 
 SecurityImpact
-Test Plan: Verified against XSS test suite, manual testing with
-OWASP attack vectors
 ```
 
 ### Rule of Thumb:
@@ -394,10 +390,13 @@ Add at the end of commit message when applicable:
 - Avoid `Co-Authored-By:` lines
 
 **Testing:**
-- `Test Plan:` - Document **non-obvious** or **critical** manual testing performed
-  - Include when testing was complex, had specific edge cases, or required special setup
-  - Omit for routine changes where "ran the tests" is sufficient
-  - Skip if automated tests cover the change adequately
+- Do not include `Validation:`, `Test Plan:`, `Tests:`, or similar testing
+  sections by default.
+- Mention testing only when the user explicitly asks for it in the commit
+  message or when test details are essential to understand a high-risk
+  security/data-integrity change.
+- Keep routine validation (for example, commands run, manual checks, or
+  "ran the tests") in the assistant response, not in the commit message.
 
 ## Example Templates
 
@@ -417,8 +416,6 @@ New validation checks:
 
 Side effect: Form submission is now slower by ~50ms due to
 validation overhead, but this is acceptable for better data quality.
-
-Test Plan: Manual testing of all profile forms with valid/invalid data
 ```
 
 ### Bug Fix
@@ -447,8 +444,6 @@ This prepares for upcoming OAuth integration in ticket #9012.
 
 No user-visible changes. All existing authentication flows work
 identically.
-
-Test Plan: Ran full test suite, manual login/logout verification
 ```
 
 ### Performance Optimization
@@ -467,9 +462,6 @@ Changes:
 
 Side effect: Database migration adds 50MB to index size, but
 the performance improvement justifies this trade-off.
-
-Test Plan: Load tested with 1000 concurrent users, verified
-query performance in production staging
 ```
 
 ### Documentation Update
@@ -609,7 +601,7 @@ Types: feat, fix, docs, style, refactor, test, chore
 
 **Optional sections** (only when they add value):
 - Changes: Bulleted list (only for multi-part changes where structure helps)
-- Test Plan: Only for complex/critical testing scenarios
+- Testing sections: omit unless the user explicitly requests one
 - Bug references and impact tags
 - Trade-offs or alternatives (for non-obvious decisions)
 
@@ -697,7 +689,7 @@ Don't aim for perfection. Adopt one new principle at a time. Incremental improve
 ### The Goldilocks Principle
 
 **Too little:** "Fix bug" - Useless years later
-**Too much:** Multi-paragraph explanation of straightforward changes with obvious "Changes:" lists and routine "Test Plan:" sections
+**Too much:** Multi-paragraph explanation of straightforward changes with obvious "Changes:" lists and routine testing sections
 **Just right:** Enough context to understand the change without external resources, proportional to complexity
 
 When in doubt, ask: "If I found this commit via git bisect in 2 years, what would I need to know that isn't obvious from the diff?"
