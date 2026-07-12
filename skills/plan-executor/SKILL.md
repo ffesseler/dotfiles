@@ -13,12 +13,11 @@ Follow this cycle for each step:
 
 1. Import plan
 2. Select next step
-3. Propose detailed plan
-4. Create substeps (mandatory for steps spanning multiple change areas)
-5. Implement
-6. Validate with user
-7. Mark complete
-8. Repeat until all steps are done
+3. Propose detailed plan (include substep breakdown for broad steps)
+4. Implement
+5. Validate with user
+6. Mark complete
+7. Repeat until all steps are done
 
 ## Planning Backend Compatibility
 
@@ -73,9 +72,10 @@ When the user says "continue", "resume", "next step", or similar:
    - Exact files to create/modify/delete
    - Ordered implementation actions
    - Validation (automated checks + user-observable checks)
-4. Present the plan.
-5. Ask: `Does this plan look good, or would you like adjustments?`
-6. Wait for response.
+4. If the step spans multiple change areas, include a **substep breakdown** in the plan itself (see Create Substeps). The user reviews and approves the plan and its substep structure together.
+5. Present the plan.
+6. Ask: `Does this plan look good, or would you like adjustments?`
+7. Wait for response.
 
 Response handling:
 
@@ -85,15 +85,15 @@ Response handling:
 
 ## Create Substeps (Mandatory for Broad Steps)
 
-After the user approves the detailed plan for a step:
+As part of the detailed plan proposal (before user approval):
 
-1. Assess the **breadth of changes**, not just file count. If the step spans **multiple distinct change areas** (for example: SQL migration, repository, service, tests), you **must** propose substeps before implementing. A step that touches 3 files but crosses SQL → repo → service is too broad; a step that touches 6 files to add a field to DTOs is fine.
+1. Assess the **breadth of changes**, not just file count. If the step spans **multiple distinct change areas** (for example: SQL migration, repository, service, tests), you **must** include a substep breakdown in the detailed plan itself. A step that touches 3 files but crosses SQL → repo → service is too broad; a step that touches 6 files to add a field to DTOs is fine.
 2. Group actions into substeps that are **coherent and independently testable**. Each substep should leave the codebase in a valid, runnable state.
 3. Use the same status lifecycle as top-level steps: `pending` -> `in_progress` -> `completed`.
 4. Name substeps with the parent prefix (for example `Step 2.1`, `Step 2.2`).
 5. Keep exactly one active item (`in_progress`) at any time across steps and substeps.
 6. Do not create a new detailed plan for each substep. Substeps execute directly from the parent step's approved detailed plan.
-7. Present the proposed substep breakdown to the user for approval before implementing.
+7. The user approves **both** the detailed plan and the substep breakdown in one go. Do not defer the substep proposal to after approval.
 
 ### When to Create Substeps
 
@@ -266,10 +266,10 @@ Report what changed, what was validated, and what decision is needed next.
 - Bad: "update component".
 - Good: specify file, concrete change, and validation.
 
-### Implementing Broad Steps Without Substeps
+### Deferring Substep Breakdown After Approval
 
-- Bad: implement a step spanning SQL + repo + service + tests as one monolithic chunk with a single validation checkpoint.
-- Good: propose layer-by-layer substeps so each change area is testable and reviewable independently.
+- Bad: present the detailed plan, get approval, then say "I'll split this into substeps now."
+- Good: include the substep breakdown in the plan proposal so the user approves both together.
 
 ### Splitting Tests From Implementation
 

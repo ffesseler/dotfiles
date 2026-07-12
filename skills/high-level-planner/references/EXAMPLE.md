@@ -6,7 +6,20 @@ This example demonstrates a complete high-level plan following the recommended f
 
 ## Overview
 
-Create a "Base Supplies" screen in the mobile app that allows users to view, search, create, and edit their saved supply items. The screen integrates into an existing "Base" tab with two sub-tabs (Services and Supplies).
+- **Problem**: Tradespeople can manage saved services from the Base area, but saved supplies do not yet have an equivalent browsing and editing workflow.
+- **Goal**: Let users view, search, create, and edit saved supplies from the mobile app.
+- **Approach**: Extend the existing Base tab into a shared services/supplies workspace, reusing existing saved-supply API and form patterns where possible.
+- **Scope**: Covers the mobile UI flow and client-side API usage; backend saved-supply behavior is assumed to already exist.
+
+---
+
+## Code Pointers
+
+- `attix-mobile-app/app/(protected)/(tabs)/base.tsx`: Base tab entry point where Services and Supplies tabs are composed.
+- `attix-mobile-app/app/screens/base-prestations/base-prestations-screen.tsx`: Existing saved-services screen to mirror for layout, search, and list behavior.
+- `attix-mobile-app/app/screens/base-supplies/base-supplies-screen.tsx`: Target screen for saved-supply list behavior.
+- `attix-mobile-app/app/components/base-supplies/SavedSupplyFormModal.tsx`: Existing modal/form pattern for creating and editing supplies.
+- `attix-mobile-app/services/api/saved-supply.service.ts`: API client for fetching and mutating saved supplies.
 
 ---
 
@@ -84,6 +97,8 @@ Base Screen (new)
 
 **Result**: User can switch between Services and empty Supplies tab
 
+**Validation**: Run the relevant navigation/screen tests if available, then open the Base tab and confirm both sub-tabs render without breaking existing Services behavior
+
 ---
 
 ### Step 2: Display Supply List
@@ -97,6 +112,8 @@ Base Screen (new)
 - Add empty state with icon and message
 
 **Result**: User sees list of supplies, can search, and create button appears
+
+**Validation**: Run the relevant list/filter tests if available, then search for an existing supply and confirm only matching supplies remain visible
 
 ---
 
@@ -112,6 +129,8 @@ Base Screen (new)
 
 **Result**: User can tap supply, edit fields, and save changes
 
+**Validation**: Run the relevant saved-supply mutation tests if available, then edit a saved supply and confirm updated values persist after reopening
+
 ---
 
 ### Step 4: Create Supply Modal
@@ -125,6 +144,8 @@ Base Screen (new)
 - Create new supply via API
 
 **Result**: User can tap "+" button to create new supply
+
+**Validation**: Run the relevant saved-supply creation tests if available, then create a supply and confirm it appears in the list and remains searchable
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: high-level-planner
-description: Create concise implementation plans organized by functional increments for software development tasks. Use when the user asks for a plan, roadmap, execution strategy, or phased approach before coding. Avoid using this skill for trivial one-shot edits or when the user explicitly wants immediate implementation instead of planning.
+description: Create concise implementation plans organized by functional increments for software development tasks, with clear opening context and code pointers for the executor. Use when the user asks for a plan, roadmap, execution strategy, or phased approach before coding. Avoid using this skill for trivial one-shot edits or when the user explicitly wants immediate implementation instead of planning.
 ---
 
 # High-Level Planner
@@ -8,6 +8,16 @@ description: Create concise implementation plans organized by functional increme
 Create implementation plans organized by functional increments rather than technical layers. Each increment should deliver testable user value.
 
 ## Core Principles
+
+### Start With Clear Context
+
+Open every plan with enough context for a reader to understand the work without re-reading the whole conversation. The beginning of the plan should clearly answer:
+- **Problem**: What is broken, missing, confusing, or limiting today?
+- **Goal**: What user or system outcome are we trying to achieve?
+- **Approach**: At a high level, what kind of change will solve it?
+- **Scope**: What is intentionally included or excluded when that matters?
+
+Keep this section concise, but make it concrete. Avoid vague openings like "Improve the feature"; name the affected workflow, the pain point, and the intended end state.
 
 ### Functional Increments Over Technical Layers
 
@@ -56,6 +66,22 @@ Step 3: User can edit items (modal + API + validation + tests)  ← ✅ tests in
 
 If an increment involves code, its tests are listed as actions within that same increment.
 
+### Prefer Automated Validation
+
+For code changes, validation should prioritize automated checks whenever they are realistic: unit tests, integration tests, type checks, linters, build commands, or targeted test commands. Manual validation is still useful, especially for UX flows, but it should usually complement automated checks rather than replace them.
+
+When writing each increment's **Validation**, lead with the most relevant automated command or test expectation, then add a short manual smoke check if needed.
+
+Prefer:
+```markdown
+**Validation**: Run `npm test -- saved-supply` and manually confirm creating a supply updates the list
+```
+
+Avoid relying only on manual validation when an automated check can cover the behavior:
+```markdown
+**Validation**: Click through the flow and confirm it works
+```
+
 ### Keep Plans Concise
 
 Plans should be scannable and lightweight:
@@ -67,12 +93,14 @@ Plans should be scannable and lightweight:
 
 ### Plan Structure
 
+Before writing increments, include a short orientation section and code pointers so the future executor starts with the right mental model and the right files.
+
 Each functional increment should include:
 
 1. Objective - What user capability this enables (1 sentence)
 2. Actions - High-level tasks to accomplish (3-5 bullets max)
 3. Result - Observable outcome the user can verify (1 sentence)
-4. Validation - Quick check to confirm the increment is done (1 sentence)
+4. Validation - Automated check first when possible, plus a manual smoke check if useful (1 sentence)
 
 Example:
 ```markdown
@@ -87,17 +115,46 @@ Example:
 
 **Result**: User can type in search box and see matching items
 
-**Validation**: Entering "wire" only shows items with "wire" in name/category
+**Validation**: Run the relevant filter tests and manually confirm entering "wire" only shows matching items
 ```
 
 ## Plan Format
 
 ### Required Sections
 
-1. Overview - Brief context (2-3 sentences)
-2. Functional Increments - Numbered steps with Objective/Actions/Result/Validation
-3. Key Decisions - Important choices made during planning
-4. Checklist - Summary of all steps
+1. Overview - Clear problem/goal/approach context (2-5 concise bullets or sentences)
+2. Code Pointers - Important files, modules, tests, and docs to inspect before executing
+3. Functional Increments - Numbered steps with Objective/Actions/Result/Validation
+4. Key Decisions - Important choices made during planning
+5. Checklist - Summary of all steps
+
+### Overview Template
+
+Use this shape unless a simpler paragraph is clearer:
+
+```markdown
+## Overview
+
+- **Problem**: [What is not working, missing, or unclear today]
+- **Goal**: [What outcome the change should produce]
+- **Approach**: [High-level strategy, not implementation details]
+- **Scope**: [Optional: boundaries, exclusions, or assumptions]
+```
+
+### Code Pointers Template
+
+Include files that matter for execution, grouped by why they matter. Prefer concrete paths over generic areas. If you are unsure about a path, say so instead of inventing one.
+
+```markdown
+## Code Pointers
+
+- `path/to/file.ts`: Existing behavior to modify or mirror
+- `path/to/component.tsx`: UI entry point affected by the change
+- `path/to/file.spec.ts`: Tests to update or use as examples
+- `docs/relevant-doc.md`: Existing documentation that may become stale
+```
+
+Keep this section short: usually 4-8 pointers. Add a one-line reason for each pointer so the executor knows why it matters.
 
 ## Output Behavior
 
@@ -281,6 +338,9 @@ Provide a scannable summary:
 ## Plan Quality Gate
 
 Before finalizing a plan, verify:
+- The opening context clearly states the problem, desired outcome, and high-level approach
+- Code Pointers names the most important files/tests/docs an executor should inspect first
+- Each increment prioritizes automated validation when realistic, with manual checks as a complement
 - Each increment is independently testable by a user
 - Step order minimizes blocking dependencies
 - Unknowns and notable risks are called out in decisions or edge cases
@@ -352,12 +412,15 @@ Instead, be concise:
 ## Workflow
 
 1. **Understand requirements** - Ask clarifying questions if needed
-2. **Identify functional increments** - What can user test at each step?
-3. **Add diagrams when needed** - Visualize complex flows only
-4. **Document decisions** - Capture important choices made
-5. **Create checklist** - Summary for quick reference
-6. **Run quality gate** - Ensure increments are testable and plan is executable
-7. **Iterate with user** - Refine plan before implementation
+2. **Inspect the codebase** - Identify the files, tests, docs, and patterns most relevant to the plan
+3. **Write the opening context** - State the problem, goal, high-level approach, and scope in user-readable language
+4. **Add Code Pointers** - List concrete files with a brief reason each
+5. **Identify functional increments** - What can user test at each step?
+6. **Add diagrams when needed** - Visualize complex flows only
+7. **Document decisions** - Capture important choices made
+8. **Create checklist** - Summary for quick reference
+9. **Run quality gate** - Ensure increments are testable and plan is executable
+10. **Iterate with user** - Refine plan before implementation
 
 ## Example Plan
 
