@@ -7,17 +7,32 @@ description: Guide for writing clear, informative commit messages. Use when (1) 
 
 This skill provides comprehensive guidance for writing high-quality commit messages based on two canonical sources: Simon Tatham's blog post on commit messages and the OpenStack GitCommitMessages wiki.
 
-## ⚠️ CRITICAL: This Skill Only PROPOSES Commit Messages
+## ⚠️ Commit Safety Policy
 
-**NEVER create commits yourself.** This skill's ONLY purpose is to:
+By default, this skill only proposes commit messages. It may create a git commit only when the user explicitly asks to commit the changes.
+
+Allowed by default:
 
 1. ✅ Analyze git changes and conversation context
 2. ✅ Draft a well-structured commit message
 3. ✅ Copy the message to clipboard for user to use
-4. ❌ NEVER run `git commit` commands
-5. ❌ NEVER actually create commits
+4. ✅ Explain how the user can commit manually
 
-**Your role:** Propose the commit message, explain your reasoning, copy it to clipboard, then let the USER decide when and how to commit.
+Allowed only after an explicit user request such as "commit this", "create the commit", or "commit staged changes":
+
+1. ✅ Run `git status` before committing
+2. ✅ Commit staged changes using the proposed message
+3. ✅ Report the resulting commit hash and subject
+
+Required safeguards:
+
+1. Commit only staged changes by default.
+2. If no files are staged, ask before staging anything.
+3. Do not include unrelated changes.
+4. Do not amend, force-push, or use `--no-verify` unless explicitly asked.
+5. Do not treat `/commit-message` alone as permission to commit.
+
+**Your role:** Propose the commit message, explain your reasoning, and either copy it to clipboard or create the commit when the USER has explicitly requested that action.
 
 ## Usage
 
@@ -484,41 +499,61 @@ Related-Bug: #7890
 
 ## Workflow for Creating Commit Messages
 
-**🚫 CRITICAL RULE: NEVER RUN `git commit` COMMANDS**
+**⚠️ CRITICAL RULE: DO NOT COMMIT WITHOUT AN EXPLICIT USER REQUEST**
 
-This skill's workflow is:
+Default workflow:
 1. **Analyze** changes and context
 2. **Propose** a commit message
 3. **Copy** to clipboard
-4. **STOP** - Let the user commit
+4. **STOP** - Let the user commit manually
+
+Commit-on-request workflow:
+1. **Analyze** changes and context
+2. **Propose** a commit message
+3. **Confirm the user explicitly asked to commit**
+4. **Run `git status`** and verify the staged files are intentional
+5. **Run `git commit`** with the proposed message
+6. **Report** the resulting commit hash and subject
 
 **Important:** When helping users write commit messages interactively, analyze BOTH the git changes AND the conversation history. The chat context often contains valuable rationale, design decisions, and explanations that should be captured in the commit message.
 
-**After generating a commit message proposal, ALWAYS:**
+**After generating a commit message proposal:**
 1. Present the proposed message to the user
 2. Explain your reasoning
-3. Copy it to the clipboard using one of these commands:
+3. If the user did not explicitly ask to commit, copy it to the clipboard using one of these commands:
    - macOS: `pbcopy`
    - Linux: `xclip -selection clipboard` or `xsel --clipboard --input`
    - Windows: `clip`
-4. **Tell the user** they can now run `git commit` themselves
+4. If the user explicitly asked to commit, run `git status`, commit only the staged changes, and report the commit hash.
 
-Example workflow:
+Example proposal-only workflow:
 ```bash
 # After crafting the commit message, copy it to clipboard
 echo "Your commit message here" | pbcopy
 ```
 
-**What you MUST do:**
+Example commit-on-request workflow:
+```bash
+git status --short
+git commit -m "Subject line" -m "Commit body"
+git rev-parse --short HEAD
+```
+
+**What you MUST do by default:**
 - ✅ Show the proposed commit message
 - ✅ Copy it to clipboard
 - ✅ Tell user they can now commit with: `git commit -m "$(pbpaste)"`
 
-**What you MUST NEVER do:**
-- ❌ Run `git commit` commands
+**What you MAY do only when explicitly requested:**
+- ✅ Run `git commit` commands
+- ✅ Create a commit from already staged changes
+
+**What you MUST NOT do without explicit permission:**
 - ❌ Run `git add` commands
-- ❌ Modify the git repository state
 - ❌ Stage or unstage files
+- ❌ Amend commits
+- ❌ Force-push
+- ❌ Use `--no-verify`
 
 ### 1. Analyze Changes
 
