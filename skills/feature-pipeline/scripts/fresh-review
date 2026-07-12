@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# fresh-review — run an external LLM CLI in fresh-context, non-interactive mode
+# against a prompt file, for cross-model reviews (plan critique, step review).
+#
+# Usage: fresh-review <engine>[:<model>] <prompt-file> [output-file]
+#
+#   engine: claude | gemini | codex | pi | opencode
+#   model : optional, passed to the engine's --model/-m flag; engine default if omitted.
+#           Examples: claude:opus, gemini:gemini-2.5-pro, codex:o3,
+#                     pi:google/gemini-2.5-pro, opencode:anthropic/claude-opus-4-8
+#
+# - The prompt file content is passed as the prompt.
+# - Engines run in their most read-only mode available (analysis only).
+# - Output is printed to stdout; if [output-file] is given it is also written there.
+set -euo pipefail
+
+engine_spec="${1:?usage: fresh-review <engine>[:<model>] <prompt-file> [output-file]}"
+prompt_file="${2:?usage: fresh-review <engine>[:<model>] <prompt-file> [output-file]}"
+out_file="${3:-}"
+
+engine="${engine_spec%%:*}"
+model=""
+if [[ "$engine_spec" == *:* ]]; then
+  model="${engine_spec#*:}"
+fi
+
+if [[ ! -f "$prompt_file" ]]; then
+  echo "fresh-review: prompt file not found: $prompt_file" >&2
+  exit 2
+fi
+
+prompt="$(cat "$prompt_file")"
+
+run_engine() {
+  case "$engine" in
+    claude)
+      # plan mode = read-only (can read files/explore, cannot edit)
+      claude -p --permission-mode plan ${model:+--model "$model"} "$prompt"
+      ;;
+    gemini)
+      # plan mode = read-only tools (can read files, cannot edit or run shell)
+      gemini --approval-mode plan ${model:+-m "$model"} -p "$prompt"
+      ;;
+    codex)
+      # read-only sandbox: can read files and run read-only commands (git log, etc.)
+      codex exec --sandbox read-only ${model:+-m "$model"} "$prompt"
+      ;;
+    pi)
+      # Ephemeral read/review session. Use an explicit allowlist so package/extension
+      # tools (including edit/write variants) are not available. Bash is kept for
+      # read-only git/code exploration when large diffs are omitted from the prompt.
+      pi -p --no-session --no-skills --no-prompt-templates \
+        --tools read,grep,find,ls,bash \
+        --append-system-prompt "Read-only review mode: do not modify files, install dependencies, start long-running services, push, commit, or run destructive commands. If you use bash, restrict it to inspection commands such as pwd, ls, cat, sed, rg, find, git status, git log, git show, and git diff." \
+        ${model:+--model "$model"} "$prompt"
+      ;;
+    opencode)
+      opencode run ${model:+-m "$model"} "$prompt"
+      ;;
+    *)
+      echo "fresh-review: unknown engine '$engine' (expected claude|gemini|codex|pi|opencode)" >&2
+      exit 2
+      ;;
+  esac
+}
+
+if [[ -n "$out_file" ]]; then
+  mkdir -p "$(dirname "$out_file")"
+  run_engine | tee "$out_file"
+else
+  run_engine
+fi
