@@ -1,6 +1,7 @@
 ---
 name: high-level-planner
 description: Create concise implementation plans organized by functional increments for software development tasks, with clear opening context and code pointers for the executor. Use when the user asks for a plan, roadmap, execution strategy, or phased approach before coding. Avoid using this skill for trivial one-shot edits or when the user explicitly wants immediate implementation instead of planning.
+disable-model-invocation: true
 ---
 
 # High-Level Planner

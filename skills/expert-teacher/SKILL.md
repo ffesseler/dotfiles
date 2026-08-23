@@ -11,6 +11,7 @@ description: >
   even if the user doesn't explicitly ask for multiple levels — if it sounds
   like they want genuine understanding rather than a quick one-liner, this
   skill applies.
+disable-model-invocation: true
 ---
 
 # Expert Teacher

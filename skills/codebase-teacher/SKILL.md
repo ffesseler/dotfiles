@@ -11,6 +11,7 @@ description: >
   if the user just says "explain X" or "deep dive into X" while inside a
   project — if X is likely a library or pattern used in the code, use this
   skill rather than giving a generic explanation.
+disable-model-invocation: true
 ---
 
 # Codebase Teacher

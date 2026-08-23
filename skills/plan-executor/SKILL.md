@@ -1,6 +1,7 @@
 ---
 name: plan-executor
 description: Execute high-level implementation plans step by step with detailed planning, user validation, and progress tracking. Use when the user wants to (1) implement a plan file (for example "execute plan.md"), (2) continue interrupted plan execution ("continue", "resume", "next step"), (3) review a step-by-step plan before coding, or (4) adjust scope during execution.
+disable-model-invocation: true
 ---
 
 # Plan Executor

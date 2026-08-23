@@ -13,6 +13,7 @@ description: >
   is `/feature-quiz <start>..<end>` but trigger on natural-language variants
   too. Do NOT use this skill for plain code explanations or walkthroughs
   without quizzing — for that, use codebase-teacher or expert-teacher.
+disable-model-invocation: true
 ---
 
 # Feature Quiz

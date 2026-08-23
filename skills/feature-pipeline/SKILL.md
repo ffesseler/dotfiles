@@ -1,6 +1,7 @@
 ---
 name: feature-pipeline
 description: "Orchestrate a full feature delivery pipeline from an approved high-level plan: fresh-context plan critique by an external LLM CLI, then step-by-step implementation in fresh-context agents with per-substep commits, cross-model step reviews, and progress logging in the plan file. Use when the user wants to run, resume, or continue a plan through the pipeline (e.g. '/feature-pipeline plans/x.md', 'lance le pipeline', 'continue the pipeline'). Not for writing the plan itself (use high-level-planner) or for ad-hoc edits."
+disable-model-invocation: true
 ---
 
 # Feature Pipeline

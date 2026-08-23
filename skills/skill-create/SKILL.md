@@ -1,6 +1,7 @@
 ---
 name: skill-create
 description: Analyze local git repository history to extract coding patterns, workflows, and conventions, then generate SKILL.md files that teach Claude your team's practices. Use when you need to (1) create skills from existing codebases, (2) document repository patterns and conventions, (3) extract coding workflows from git history, (4) generate development guidelines from actual practice, or (5) convert implicit team knowledge into explicit skill documentation.
+disable-model-invocation: true
 ---
 
 # Skill Create - Git Pattern Analysis
