@@ -15,3 +15,6 @@ uv python install 3.11
 llm install llm-gemini
 llm keys set gemini
 llm install llm-hacker-news
+
+curl -fsSL https://plannotator.ai/install.sh | bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/lightonai/next-plaid/releases/latest/download/colgrep-installer.sh | sh
