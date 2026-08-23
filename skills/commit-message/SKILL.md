@@ -34,6 +34,15 @@ Required safeguards:
 
 **Your role:** Propose the commit message, explain your reasoning, and either copy it to clipboard or create the commit when the USER has explicitly requested that action.
 
+## Mandatory completion gate
+
+For every commit-message proposal where no commit is requested:
+
+1. Run `pbcopy` with the final proposed message before replying.
+2. Do not claim the message is ready until that command has succeeded.
+3. End the response with: `Copié dans le presse-papiers.`
+4. If `pbcopy` is unavailable, explicitly report the failure.
+
 ## Usage
 
 **Basic invocation:**
@@ -497,6 +506,28 @@ DocImpact
 Related-Bug: #7890
 ```
 
+## Mandatory Atomic Format Preflight
+
+Formatting validation and commit execution are two separate phases.
+
+Before running `git commit`:
+
+1. Write the complete message to the temporary file.
+2. Run the line-length validator as a standalone command.
+3. Do not include `git commit` in the same shell command as the first
+   validation attempt.
+4. If validation fails:
+   - inspect all reported violations;
+   - reflow every offending paragraph in one pass;
+   - validate the complete file again as a standalone command;
+   - do not fix one reported line and retry the commit pipeline.
+5. Run `git commit` in a separate command only after the validator exits
+   successfully.
+6. Never estimate line lengths visually. The validator is authoritative.
+
+A formatting error must therefore cause zero `git commit` attempts. There
+should be at most one actual commit attempt once the message format is valid.
+
 ## Workflow for Creating Commit Messages
 
 **⚠️ CRITICAL RULE: DO NOT COMMIT WITHOUT AN EXPLICIT USER REQUEST**
@@ -512,8 +543,10 @@ Commit-on-request workflow:
 2. **Propose** a commit message
 3. **Confirm the user explicitly asked to commit**
 4. **Run `git status`** and verify the staged files are intentional
-5. **Run `git commit`** with the proposed message
-6. **Report** the resulting commit hash and subject
+5. **Write the full commit message to a temporary file** with the body already wrapped at 72 characters
+6. **Validate line lengths before committing**; fix the message if any body line exceeds 72 characters
+7. **Run `git commit -F <message-file>`** with the validated message
+8. **Report** the resulting commit hash and subject
 
 **Important:** When helping users write commit messages interactively, analyze BOTH the git changes AND the conversation history. The chat context often contains valuable rationale, design decisions, and explanations that should be captured in the commit message.
 
@@ -535,14 +568,42 @@ echo "Your commit message here" | pbcopy
 Example commit-on-request workflow:
 ```bash
 git status --short
-git commit -m "Subject line" -m "Commit body"
+
+cat > /tmp/commit-message.txt <<'EOF'
+Remove unused env example entries
+
+Prune variables from the API environment example that are no longer
+referenced by runtime code, scripts, or eval runners. This keeps the
+sample configuration aligned with the current code and reduces setup
+noise for developers.
+EOF
+
+# Phase 1: validate the complete message in a standalone command.
+# The subject is limited to 50 characters and body lines to 72 characters.
+awk '
+  NR == 1 && length($0) > 50 { print "subject " length($0) ":" $0; bad=1 }
+  NR > 2 && length($0) > 72 { print "body " length($0) ":" $0; bad=1 }
+  END { exit bad }
+' /tmp/commit-message.txt
+```
+
+Only after the standalone validation command succeeds, start a new shell
+command for the commit:
+
+```bash
+# Phase 2: commit the already validated message.
+git commit -F /tmp/commit-message.txt
 git rev-parse --short HEAD
 ```
+
+When committing, never pass an unwrapped body through a single `-m`
+argument. Use a commit message file, validate line lengths, and only
+then run `git commit -F`.
 
 **What you MUST do by default:**
 - ✅ Show the proposed commit message
 - ✅ Copy it to clipboard
-- ✅ Tell user they can now commit with: `git commit -m "$(pbpaste)"`
+- ✅ Tell user they can save the clipboard content to a message file, validate line lengths, and commit with `git commit -F <message-file>`
 
 **What you MAY do only when explicitly requested:**
 - ✅ Run `git commit` commands
