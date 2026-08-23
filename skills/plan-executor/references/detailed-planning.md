@@ -143,6 +143,28 @@ Each detailed plan should end with clear validation steps:
 - **Visual confirmations** - UI elements to verify
 - **Functional tests** - Edge cases to check
 
+## Pattern: Test Placement in Substeps
+
+When a detailed plan includes substeps, place tests inside the substep that introduces the behavior they verify.
+
+- Do not create a substep whose main purpose is writing tests for previous substeps.
+- A final validation substep may run targeted tests, lint, typecheck, or build, but it must not create or edit tests.
+- If a test validates Step N.M behavior, list that test file and test action under Step N.M.
+
+Example:
+
+❌ Split test authoring from implementation:
+```md
+Step 1.2 — Domain + persistence + DTOs
+Step 1.3 — Targeted tests
+```
+
+✅ Keep tests with the tested increment:
+```md
+Step 1.2 — Domain + persistence + DTOs + mapper/service tests
+Step 1.3 — Final validation only
+```
+
 ## Anti-Patterns
 
 ### Too Vague
@@ -157,6 +179,10 @@ Each detailed plan should end with clear validation steps:
 ❌ "Implement the feature"
 ✅ "Implement the feature, then verify by tapping items and checking modal opens"
 
+### Test-Only Substep
+❌ "Step 2.1: Add mapper", then "Step 2.2: Write mapper tests"
+✅ "Step 2.1: Add mapper + mapper tests"
+
 ### Skipping Dependencies
 ❌ "Add the modal" (but modal component doesn't exist yet)
 ✅ "First create SavedSupplyFormModal.tsx, then integrate into screen"
@@ -169,5 +195,7 @@ Before presenting a detailed plan to the user:
 - [ ] Actions are ordered correctly (no missing dependencies)
 - [ ] Code changes are clear (before/after or description)
 - [ ] Validation steps include automated checks when available and user-observable results
+- [ ] If substeps exist, tests are listed with the implementation substep they validate
+- [ ] If a final validation substep exists, it only runs checks and does not add/edit tests
 - [ ] Related files have been read for context
 - [ ] Existing patterns are followed

@@ -60,9 +60,10 @@ When the user says "continue", "resume", "next step", or similar:
 2. If the current parent step has pending substeps, choose the next pending substep.
 3. Otherwise choose next `pending` top-level step that is not blocked.
 4. Mark it `in_progress`.
-5. Announce current item start.
-6. If the item is a top-level step, move to Propose Detailed Plan.
-7. If the item is a substep, move directly to Implement.
+5. If the item is a top-level step, read the plan-level `## Next step context` section when present and use it to speed up context gathering.
+6. Announce current item start.
+7. If the item is a top-level step, move to Propose Detailed Plan.
+8. If the item is a substep, move directly to Implement.
 
 ## Propose Detailed Plan
 
@@ -88,7 +89,7 @@ Response handling:
 
 As part of the detailed plan proposal (before user approval):
 
-1. Assess the **breadth of changes**, not just file count. If the step spans **multiple distinct change areas** (for example: SQL migration, repository, service, tests), you **must** include a substep breakdown in the detailed plan itself. A step that touches 3 files but crosses SQL → repo → service is too broad; a step that touches 6 files to add a field to DTOs is fine.
+1. Assess the **breadth of changes**, not just file count. If the step spans **multiple distinct change areas** (for example: SQL migration, repository, service/API/UI), you **must** include a substep breakdown in the detailed plan itself. Tests are not a separate change area: they belong to the implementation substep they validate. A step that touches 3 files but crosses SQL → repo → service is too broad; a step that touches 6 files to add a field to DTOs is fine.
 2. Group actions into substeps that are **coherent and independently testable**. Each substep should leave the codebase in a valid, runnable state.
 3. Use the same status lifecycle as top-level steps: `pending` -> `in_progress` -> `completed`.
 4. Name substeps with the parent prefix (for example `Step 2.1`, `Step 2.2`).
@@ -112,7 +113,9 @@ Do NOT create substeps for steps that are one coherent change, even if many file
 
 Substeps must group related changes so each unit is meaningful and testable on its own:
 
-- **Keep tests with their implementation.** If a substep adds a function or component, include its tests in the same substep — never defer tests to a later substep.
+- **Keep tests with their implementation.** If a substep adds a function, component, endpoint, mapper, schema, prompt, or behavior, include the tests that verify it in the same substep — never defer tests to a later substep.
+- **Never create a test-writing-only substep.** A substep named “Tests”, “Targeted tests”, “Tests ciblés”, or similar is invalid if it creates or edits tests for behavior implemented in previous substeps. Move each test into the substep that introduces the behavior it verifies.
+- **Keep final validation separate from test authoring.** A final validation substep is allowed only to run existing/just-added checks across the completed increment. It must not add missing tests for previous substeps.
 - **Keep type generation with the step that needs it.** If a step involves a migration and a generated type, keep both in the same substep. Do not split "run migration" from "regenerate types".
 - **Keep a UI change with its supporting logic.** If a new screen requires a new hook, group the hook and the screen in the same substep.
 - **Keep related config changes together.** If a feature needs route registration and layout changes, group them.
@@ -138,6 +141,15 @@ Use a **layer-by-layer** progression, keeping each layer testable before moving 
 
 Each substep builds on the previous one and is independently testable. The final substep is a cross-layer validation that confirms everything works together.
 
+### Substep Proposal Self-Check
+
+Before presenting a detailed plan with substeps, verify:
+
+- [ ] No substep is primarily “write tests”.
+- [ ] Every behavior-changing substep lists its implementation files and its test files together.
+- [ ] Any final validation substep only runs checks; it does not create or edit tests.
+- [ ] If a proposed test covers behavior from Step N.M, that test is included in Step N.M.
+
 ### Good Substep Splits
 
 | Too Fine ❌ | Coherent ✅ |
@@ -148,6 +160,7 @@ Each substep builds on the previous one and is independently testable. The final
 | Step 3.2: Regenerate types | Step 3.2: Build API endpoints using new types + endpoint tests |
 | Step 4.1: Create component file | Step 4.1: Create component + its stories/tests |
 | Step 4.2: Add component styles | Step 4.2: Integrate component into parent screen |
+| Step 1.2: Domain + persistence + DTOs<br>Step 1.3: Targeted tests | Step 1.2: Domain + persistence + DTOs + mapper/service tests<br>Step 1.3: Final validation only |
 
 ### Bad Substep Splits (Avoid)
 
@@ -186,6 +199,55 @@ Response handling:
 4. Check remaining top-level steps.
 5. If steps remain, ask whether to continue now.
 6. If none remain, announce completion and exit.
+
+## Mandatory Plan Progress Log
+
+When a plan file is writable, the plan file itself is the durable execution record.
+Do not rely only on task state or conversation history.
+
+### When to Update
+
+- After the user validates a completed substep: update its parent step's in-progress log entry.
+- After the user validates a completed top-level step: update the checklist and write/finalize its completion entry **before** reporting the step as marked complete.
+- While finalizing a completed step, update the plan-level `## Next step context` section with concise context that will help a fresh session start the next pending step.
+- Before starting the next top-level step: read the most recent progress entry to recover delivered scope, deferred work, and plan changes; also read `## Next step context` when present.
+
+If the plan has no `## Progress log` section, create one at the end of the existing plan. This is an explicit exception to the usual “do not create docs” rule: the user asked to execute the plan, and the plan is the execution state.
+
+### Required Entry Structure
+
+Every completed top-level step gets an entry in this exact structure:
+
+```md
+### YYYY-MM-DD — Step N completed
+
+#### Delivered
+- Implemented behavior, key files/components, and user-visible result.
+
+#### Deferred
+- Work intentionally moved to a later step, omitted from scope, or still blocked.
+
+#### Plan changes
+- Every decision that differs from the initial plan: changed behavior, renamed/replaced component, moved increment, relaxed/tightened contract, or new dependency.
+- Write `None.` only when there were no deviations.
+```
+
+Be explicit rather than silently rewriting history. A change from “generate on the first exploitable message” to “always ask first” is a **Plan changes** item, not an implementation detail. A feature intentionally postponed to a later step is a **Deferred** item, even if it was mentioned elsewhere in the plan.
+
+### Next Step Context
+
+Keep a single plan-level `## Next step context` section for handoff context. Do not add next-step context to every completed step entry.
+
+Use it only to help the next fresh execution context start faster:
+
+- code pointers and relevant symbols;
+- existing patterns to follow;
+- constraints or facts discovered while the completed step was still loaded in context;
+- scope notes that affect the next pending step.
+
+Keep it factual and concise. Do not write a detailed plan for the next step. Replace stale context instead of appending indefinitely. If there is no useful context to carry forward, write `None.`
+
+**Completion gate:** updating this log and the plan checklist is mandatory. Do not state that a step is complete until both are saved successfully.
 
 ## Error Handling
 
