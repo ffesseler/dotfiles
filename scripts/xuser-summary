@@ -1,0 +1,534 @@
+#!/usr/bin/env bun
+/**
+ * xuser-summary — Summarize recent X/Twitter activity for a user using twt + pi
+ *
+ * Uses https://github.com/yashiels/twitter-cli (`twt`) for X/Twitter access.
+ * Fetches recent posts, expands/fetches linked content, then asks pi to summarize.
+ *
+ * Usage:
+ *   xuser-summary <handle> [--days <n>] [--limit <n>] [--raw] [--out <file>]
+ */
+
+import { spawnSync } from "child_process";
+
+// ─── CLI args ────────────────────────────────────────────────────────────────
+
+const args = process.argv.slice(2);
+
+if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
+  console.log(`
+xuser-summary — Summarize recent X/Twitter user activity
+
+Usage:
+  xuser-summary <handle-or-url> [options]
+
+Options:
+  --days <n>             Days to look back (default: 7)
+  --limit <n>            Max tweets to fetch (default: 200)
+  --max-links <n>        Max external links to fetch/summarize (default: 25)
+  --max-link-chars <n>   Max text chars kept per fetched link (default: 6000)
+  --provider <name>      pi provider to use (default: openai-codex)
+  --model <name>         pi model to use (default: gpt-5.4-mini)
+  --thinking <level>     pi thinking level (default: low)
+  --raw                  Print collected activity/context before the summary
+  --out <file>           Save the summary to a file
+  -h, --help             Show this help
+
+Examples:
+  xuser-summary badlogicgames
+  xuser-summary @badlogicgames --days 14 --out badlogicgames-week.md
+  xuser-summary https://x.com/badlogicgames --days 3 --raw
+`);
+  process.exit(0);
+}
+
+let handleInput = "";
+let days = 7;
+let fetchLimit = 200;
+let maxLinks = 25;
+let maxLinkChars = 6000;
+let provider = "openai-codex";
+let model = "gpt-5.4-mini";
+let thinking = "low";
+let showRaw = false;
+let outFile = "";
+
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  if (arg === "--days" && args[i + 1]) {
+    const parsed = Number(args[++i]);
+    if (!Number.isInteger(parsed) || parsed <= 0) die("--days must be a positive integer.");
+    days = parsed;
+  } else if (arg === "--limit" && args[i + 1]) {
+    const parsed = Number(args[++i]);
+    if (!Number.isInteger(parsed) || parsed <= 0) die("--limit must be a positive integer.");
+    fetchLimit = parsed;
+  } else if (arg === "--max-links" && args[i + 1]) {
+    const parsed = Number(args[++i]);
+    if (!Number.isInteger(parsed) || parsed < 0) die("--max-links must be a non-negative integer.");
+    maxLinks = parsed;
+  } else if (arg === "--max-link-chars" && args[i + 1]) {
+    const parsed = Number(args[++i]);
+    if (!Number.isInteger(parsed) || parsed <= 0) die("--max-link-chars must be a positive integer.");
+    maxLinkChars = parsed;
+  } else if (arg === "--provider" && args[i + 1]) {
+    provider = args[++i];
+  } else if (arg === "--model" && args[i + 1]) {
+    model = args[++i];
+  } else if (arg === "--thinking" && args[i + 1]) {
+    thinking = args[++i];
+  } else if (arg === "--out" && args[i + 1]) {
+    outFile = args[++i];
+  } else if (arg === "--raw") {
+    showRaw = true;
+  } else if (!arg.startsWith("--") && !handleInput) {
+    handleInput = arg;
+  } else if (arg.startsWith("--")) {
+    die(`Unknown option: ${arg}`);
+  }
+}
+
+const handle = normalizeHandle(handleInput);
+if (!handle) die("Please provide a Twitter/X handle or profile URL.");
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function color(code: number, text: string) { return `\x1b[${code}m${text}\x1b[0m`; }
+const bold   = (s: string) => color(1, s);
+const dim    = (s: string) => color(2, s);
+const cyan   = (s: string) => color(36, s);
+const green  = (s: string) => color(32, s);
+const yellow = (s: string) => color(33, s);
+
+function die(message: string): never {
+  console.error(`❌  ${message}`);
+  process.exit(1);
+}
+
+function normalizeHandle(input: string): string {
+  return input
+    .trim()
+    .replace(/^@/, "")
+    .replace(/^https?:\/\/(?:www\.)?(?:x|twitter)\.com\//i, "")
+    .replace(/\/.*$/, "");
+}
+
+function isoDateDaysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+function isoDateTomorrow(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function runJson(command: string, commandArgs: string[]): any {
+  const r = spawnSync(command, commandArgs, {
+    encoding: "utf8",
+    maxBuffer: 50 * 1024 * 1024,
+  });
+
+  if (r.error) throw new Error(`Could not run ${command}: ${r.error.message}`);
+  if (r.status !== 0) {
+    const stderr = r.stderr?.trim();
+    const stdout = r.stdout?.trim();
+    throw new Error(`${command} ${commandArgs.join(" ")} failed` +
+      (stderr ? `\n${stderr}` : stdout ? `\n${stdout}` : ""));
+  }
+
+  const stdout = r.stdout.trim();
+  if (!stdout) return [];
+  try { return JSON.parse(stdout); }
+  catch { throw new Error(`Could not parse ${command} JSON response:\n${r.stdout}`); }
+}
+
+function twtJson(commandArgs: string[]): any {
+  return runJson("twt", ["--json", "--quiet", ...commandArgs]);
+}
+
+function extractUrls(text: string): string[] {
+  return [...text.matchAll(/https?:\/\/[^\s)\]}>,"']+/g)]
+    .map((m) => m[0].replace(/[.,;:!?]+$/, ""));
+}
+
+function uniq<T>(items: T[]): T[] {
+  return [...new Set(items)];
+}
+
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max) + `\n\n[... truncated ${s.length - max} chars ...]`;
+}
+
+function decodeHtml(s: string): string {
+  const map: Record<string, string> = {
+    amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", mdash: "—", ndash: "–",
+  };
+  return s.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (_, entity) => {
+    if (entity.startsWith("#x")) return String.fromCharCode(parseInt(entity.slice(2), 16));
+    if (entity.startsWith("#")) return String.fromCharCode(parseInt(entity.slice(1), 10));
+    return map[entity] ?? `&${entity};`;
+  });
+}
+
+function htmlToText(html: string): string {
+  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "";
+  let body = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<!--([\s\S]*?)-->/g, " ")
+    .replace(/<\/(p|div|section|article|li|h[1-6]|blockquote|pre)>/gi, "\n")
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ");
+  body = decodeHtml(body).replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
+  const cleanTitle = decodeHtml(title.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+  return cleanTitle ? `Title: ${cleanTitle}\n\n${body}` : body;
+}
+
+function resolveUrl(url: string): string {
+  const r = spawnSync("curl", ["-sIL", "-A", "Mozilla/5.0", url], {
+    encoding: "utf8",
+    maxBuffer: 2 * 1024 * 1024,
+  });
+  if (r.status !== 0 || !r.stdout) return url;
+  const locations = r.stdout
+    .split(/\r?\n/)
+    .filter((line) => /^location:/i.test(line))
+    .map((line) => line.replace(/^location:\s*/i, "").trim());
+  if (locations.length === 0) return url;
+  const last = locations[locations.length - 1];
+  try {
+    const base = new URL(url);
+    // t.co sometimes returns relative X paths such as /user/status/123.
+    if (base.hostname === "t.co" && last.startsWith("/")) return `https://x.com${last}`;
+    return new URL(last, url).toString();
+  }
+  catch { return last || url; }
+}
+
+async function fetchText(url: string, maxChars: number): Promise<{ title: string; text: string; kind: string; error?: string }> {
+  try {
+    const github = githubInfo(url);
+    if (github) return await fetchGithubText(github, maxChars);
+
+    const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 xuser-summary" }, redirect: "follow" });
+    if (!res.ok) return { title: "", text: "", kind: "web page", error: `HTTP ${res.status}` };
+    const contentType = res.headers.get("content-type") ?? "";
+    const raw = await res.text();
+    const text = contentType.includes("html") ? htmlToText(raw) : raw;
+    return { title: firstTitle(text), text: truncate(text, maxChars), kind: contentType.includes("html") ? "article/page" : "text" };
+  } catch (e: any) {
+    return { title: "", text: "", kind: "unknown", error: e.message };
+  }
+}
+
+function githubInfo(url: string): { owner: string; repo: string; pathParts: string[] } | undefined {
+  let u: URL;
+  try { u = new URL(url); } catch { return undefined; }
+  if (!/(^|\.)github\.com$/i.test(u.hostname)) return undefined;
+  const parts = u.pathname.split("/").filter(Boolean);
+  if (parts.length < 2) return undefined;
+  return { owner: parts[0], repo: parts[1], pathParts: parts.slice(2) };
+}
+
+async function fetchGithubText(info: { owner: string; repo: string; pathParts: string[] }, maxChars: number) {
+  const { owner, repo, pathParts } = info;
+  const apiHeaders = { "user-agent": "xuser-summary", "accept": "application/vnd.github+json" };
+
+  if (pathParts[0] === "blob" && pathParts.length >= 3) {
+    const branch = pathParts[1];
+    const filePath = pathParts.slice(2).join("/");
+    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`;
+    const res = await fetch(rawUrl, { headers: { "user-agent": "xuser-summary" } });
+    const text = res.ok ? await res.text() : "";
+    return { title: `${owner}/${repo}: ${filePath}`, text: truncate(text, maxChars), kind: "GitHub file" };
+  }
+
+  if (pathParts[0] === "commit" && pathParts[1]) {
+    const sha = pathParts[1];
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${sha}`, { headers: apiHeaders });
+    if (!res.ok) return { title: `${owner}/${repo} commit ${sha}`, text: "", kind: "GitHub commit", error: `HTTP ${res.status}` };
+    const c: any = await res.json();
+    const files = Array.isArray(c.files) ? c.files.slice(0, 20).map((f: any) => `- ${f.status} ${f.filename} (+${f.additions}/-${f.deletions})`).join("\n") : "";
+    const text = `Commit: ${c.commit?.message ?? ""}\nAuthor: ${c.commit?.author?.name ?? ""}\nDate: ${c.commit?.author?.date ?? ""}\n\nChanged files:\n${files}`;
+    return { title: `${owner}/${repo} commit ${sha.slice(0, 7)}`, text: truncate(text, maxChars), kind: "GitHub commit" };
+  }
+
+  if (pathParts[0] === "pull" && pathParts[1]) {
+    const n = pathParts[1];
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${n}`, { headers: apiHeaders });
+    if (!res.ok) return { title: `${owner}/${repo} PR #${n}`, text: "", kind: "GitHub PR", error: `HTTP ${res.status}` };
+    const pr: any = await res.json();
+    const text = `PR: ${pr.title}\nState: ${pr.state}\nAuthor: ${pr.user?.login ?? ""}\n\n${pr.body ?? ""}`;
+    return { title: `${owner}/${repo} PR #${n}: ${pr.title}`, text: truncate(text, maxChars), kind: "GitHub PR" };
+  }
+
+  if (pathParts.length === 0) {
+    const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers: apiHeaders });
+    const readmeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers: { ...apiHeaders, accept: "application/vnd.github.raw" } });
+    const repoJson: any = repoRes.ok ? await repoRes.json() : {};
+    const readme = readmeRes.ok ? await readmeRes.text() : "";
+    const text = `Repository: ${owner}/${repo}\nDescription: ${repoJson.description ?? ""}\nStars: ${repoJson.stargazers_count ?? "unknown"}\nLanguage: ${repoJson.language ?? "unknown"}\nHomepage: ${repoJson.homepage ?? ""}\n\nREADME:\n${readme}`;
+    return { title: `${owner}/${repo}`, text: truncate(text, maxChars), kind: "GitHub repository" };
+  }
+
+  const pageUrl = `https://github.com/${owner}/${repo}/${pathParts.join("/")}`;
+  const res = await fetch(pageUrl, { headers: { "user-agent": "Mozilla/5.0 xuser-summary" } });
+  const text = res.ok ? htmlToText(await res.text()) : "";
+  return { title: `${owner}/${repo}/${pathParts.join("/")}`, text: truncate(text, maxChars), kind: "GitHub page", error: res.ok ? undefined : `HTTP ${res.status}` };
+}
+
+function firstTitle(text: string): string {
+  const m = text.match(/^Title:\s*(.+)$/m);
+  return m?.[1]?.trim() ?? text.split("\n").find((l) => l.trim())?.trim().slice(0, 120) ?? "";
+}
+
+function tweetIdFromUrl(url: string): string | undefined {
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)(x|twitter)\.com$/i.test(u.hostname)) return undefined;
+    return u.pathname.match(/\/status\/(\d{10,})/)?.[1];
+  } catch { return undefined; }
+}
+
+// ─── Tweet normalization ────────────────────────────────────────────────────
+
+interface Tweet {
+  id: string;
+  text: string;
+  created_at: string;
+  author_handle: string;
+  url: string;
+  favorite_count: number;
+  retweet_count: number;
+  reply_count: number;
+  view_count: number;
+  is_retweet: boolean;
+  is_reply: boolean;
+  links: string[];
+}
+
+function normalizeTweet(t: any): Tweet | undefined {
+  const id = String(t?.id ?? "");
+  const text = String(t?.text ?? "");
+  if (!id || !text) return undefined;
+  const author = String(t?.author_handle ?? t?.authorHandle ?? "");
+  const url = String(t?.url ?? (author ? `https://x.com/${author}/status/${id}` : `https://x.com/i/web/status/${id}`));
+  return {
+    id,
+    text,
+    created_at: String(t?.created_at ?? t?.createdAt ?? ""),
+    author_handle: author,
+    url,
+    favorite_count: Number(t?.favorite_count ?? t?.favoriteCount ?? t?.metrics?.likes ?? 0),
+    retweet_count: Number(t?.retweet_count ?? t?.retweetCount ?? t?.metrics?.retweets ?? 0),
+    reply_count: Number(t?.reply_count ?? t?.replyCount ?? t?.metrics?.replies ?? 0),
+    view_count: Number(t?.view_count ?? t?.viewCount ?? 0),
+    is_retweet: Boolean(t?.is_retweet ?? t?.isRetweet ?? false),
+    is_reply: Boolean(t?.is_reply ?? t?.isReply ?? false),
+    links: extractUrls(text),
+  };
+}
+
+function normalizeTweetArray(payload: any): Tweet[] {
+  const list = Array.isArray(payload) ? payload : [payload];
+  return list.map(normalizeTweet).filter(Boolean) as Tweet[];
+}
+
+function dedupeTweets(list: Tweet[]): Tweet[] {
+  const seen = new Set<string>();
+  const out: Tweet[] = [];
+  for (const t of list) {
+    if (seen.has(t.id)) continue;
+    seen.add(t.id);
+    out.push(t);
+  }
+  return out;
+}
+
+function labelTweet(t: Tweet): string {
+  const metrics = `❤️ ${t.favorite_count} · 🔁 ${t.retweet_count} · 💬 ${t.reply_count}`;
+  const flags = [t.is_retweet ? "retweet" : "post", t.is_reply ? "reply" : ""].filter(Boolean).join(", ");
+  return `- [${t.created_at || "unknown date"}] @${t.author_handle || handle} (${flags}; ${metrics})\n  ${t.text.replace(/\n/g, "\n  ")}\n  Source: ${t.url}`;
+}
+
+// ─── Step 1: Fetch recent user activity via twt ──────────────────────────────
+
+const since = isoDateDaysAgo(days);
+const until = isoDateTomorrow();
+const query = `from:${handle} since:${since} until:${until}`;
+
+console.log(bold(`\n🔍  Fetching @${handle}'s activity via twt (${days} day(s), limit ${fetchLimit})…`));
+console.log(dim(`    Primary: twt tweets ${handle}`));
+console.log(dim(`    Best-effort supplemental search: ${query}`));
+
+let tweets: Tweet[] = [];
+try {
+  // twt's user timeline is more reliable than bare from: search for recent posts.
+  tweets = normalizeTweetArray(twtJson(["tweets", handle, "--limit", String(fetchLimit)]))
+    .filter((t) => !t.created_at || new Date(t.created_at) >= new Date(`${since}T00:00:00Z`));
+} catch (e: any) {
+  die(`${e.message}\n\nInstall/authenticate yashiels/twitter-cli first: brew install yashiels/tap/twt && twt auth login`);
+}
+
+try {
+  // Search can sometimes surface replies/edge cases that the user timeline misses,
+  // but X often returns no JSON for broad from: queries; treat this as best-effort.
+  const searched = normalizeTweetArray(twtJson(["search", query, "--limit", String(fetchLimit)]));
+  tweets = dedupeTweets([...tweets, ...searched]);
+} catch (e: any) {
+  console.warn(yellow(`⚠️  Supplemental twt search failed or returned non-JSON; continuing with twt tweets.`));
+}
+
+tweets = dedupeTweets(tweets).sort((a, b) => {
+  const at = new Date(a.created_at).getTime();
+  const bt = new Date(b.created_at).getTime();
+  return (Number.isFinite(at) ? at : 0) - (Number.isFinite(bt) ? bt : 0);
+});
+
+if (tweets.length === 0) die(`No tweets found for @${handle} in the last ${days} day(s).`);
+console.log(green(`✅  Retrieved ${tweets.length} tweet(s)`));
+
+// ─── Step 2: Expand and fetch linked content ────────────────────────────────
+
+console.log(bold(`🔗  Expanding and fetching linked content (max ${maxLinks})…`));
+
+interface LinkContext {
+  originalUrl: string;
+  expandedUrl: string;
+  fromTweetIds: string[];
+  kind: string;
+  title: string;
+  text: string;
+  error?: string;
+}
+
+const linkMap = new Map<string, { originalUrl: string; expandedUrl: string; fromTweetIds: string[] }>();
+for (const t of tweets) {
+  for (const originalUrl of t.links) {
+    const expandedUrl = resolveUrl(originalUrl);
+    const key = expandedUrl || originalUrl;
+    const existing = linkMap.get(key);
+    if (existing) existing.fromTweetIds.push(t.id);
+    else linkMap.set(key, { originalUrl, expandedUrl: key, fromTweetIds: [t.id] });
+  }
+}
+
+const allLinks = [...linkMap.values()]
+  .filter((l) => !l.expandedUrl.match(/^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/.+\/status\//i));
+const selectedLinks = allLinks.slice(0, maxLinks);
+const skippedLinks = allLinks.length - selectedLinks.length;
+
+const linkContexts: LinkContext[] = [];
+for (let i = 0; i < selectedLinks.length; i++) {
+  const l = selectedLinks[i];
+  process.stdout.write(dim(`    [${i + 1}/${selectedLinks.length}] ${l.expandedUrl}\n`));
+  const fetched = await fetchText(l.expandedUrl, maxLinkChars);
+  linkContexts.push({ ...l, ...fetched });
+}
+
+// Fetch linked tweets separately via twt, because many retweets/quotes/articles appear as X links.
+const linkedTweetIds = uniq([...linkMap.values()].map((l) => tweetIdFromUrl(l.expandedUrl)).filter(Boolean) as string[])
+  .filter((id) => !tweets.some((t) => t.id === id))
+  .slice(0, maxLinks);
+const linkedTweets: Tweet[] = [];
+for (const id of linkedTweetIds) {
+  try { linkedTweets.push(...normalizeTweetArray(twtJson(["tweet", id]))); }
+  catch { /* ignore inaccessible/deleted tweets */ }
+}
+
+console.log(green(`✅  Fetched ${linkContexts.length} external link(s) and ${linkedTweets.length} linked tweet(s)`));
+
+// ─── Step 3: Build structured activity text ─────────────────────────────────
+
+const originalPosts = tweets.filter((t) => !t.is_reply && !t.is_retweet);
+const replies = tweets.filter((t) => t.is_reply);
+const retweets = tweets.filter((t) => t.is_retweet);
+
+const tweetsSection = tweets.map(labelTweet).join("\n\n");
+const linkedTweetsSection = linkedTweets.length > 0
+  ? linkedTweets.map(labelTweet).join("\n\n")
+  : "No linked/quoted tweet content fetched.";
+
+const linksSection = linkContexts.length > 0
+  ? linkContexts.map((l, i) => {
+      const refs = uniq(l.fromTweetIds).map((id) => `https://x.com/${handle}/status/${id}`).join(", ");
+      return `## [L${i + 1}] ${l.title || l.expandedUrl}\nKind: ${l.kind}\nURL: ${l.expandedUrl}\nMentioned from: ${refs}\n${l.error ? `Fetch warning: ${l.error}\n` : ""}\nContent excerpt:\n${l.text || "(no readable text extracted)"}`;
+    }).join("\n\n---\n\n")
+  : "No external non-X links found or fetched.";
+
+const caveats = [
+  "Data source: twt user timeline plus best-effort twt search. Native repost/retweet coverage depends on what X and twt expose; if native retweets are absent from the raw data, they cannot be summarized.",
+  skippedLinks > 0 ? `${skippedLinks} external link(s) were skipped because of --max-links=${maxLinks}.` : "",
+].filter(Boolean).map((s) => `- ${s}`).join("\n");
+
+const activityText = `# @${handle} X/Twitter activity input\n\nRange: last ${days} day(s), since ${since}, until ${until}\nFetched tweets: ${tweets.length}\nOriginal/non-reply posts: ${originalPosts.length}\nReplies: ${replies.length}\nRetweets marked by twt: ${retweets.length}\nExternal links fetched: ${linkContexts.length}\n\n## Caveats\n${caveats}\n\n## User tweets, chronological\n\n${tweetsSection}\n\n# Linked/quoted tweets fetched\n\n${linkedTweetsSection}\n\n# External linked content\n\n${linksSection}\n`;
+
+if (showRaw) {
+  console.log("\n" + bold("─── Collected Activity Context ──────────────────"));
+  console.log(dim(activityText));
+  console.log(bold("────────────────────────────────────────────────\n"));
+}
+
+// ─── Step 4: Summarize with pi ───────────────────────────────────────────────
+
+console.log(bold(`🤖  Summarizing with pi (${provider}/${model}, thinking: ${thinking})…\n`));
+
+const systemPrompt =
+  "You are an expert analyst summarizing a person's recent X/Twitter activity. " +
+  "Use only the provided tweets and fetched linked content. Be concise, accurate, and cite source URLs. " +
+  "Do not invent content for links that were not fetched.";
+
+const userPrompt =
+  `Summarize @${handle}'s activity over the last ${days} day(s).\n\n` +
+  `The input includes the user's tweets, linked/quoted tweets when fetchable, and readable excerpts from external links. ` +
+  `For links/articles/GitHub projects, summarize what the linked content says, not just the tweet text. ` +
+  `If the raw data does not expose native retweets, mention that limitation briefly.\n\n` +
+  `Return exactly these Markdown sections:\n\n` +
+  `## TL;DR\n3–5 sentences covering the main themes, tone, and notable activity.\n\n` +
+  `## Main Topics\nBullets grouped by topic. Explain what @${handle} said or amplified, with source tweet links.\n\n` +
+  `## Shared Links / Projects / Articles\nFor each important external link, summarize the linked content in 2–4 sentences and why it matters in the context of the user's tweet. Include the URL.\n\n` +
+  `## Retweets / Amplified Posts\nSummarize retweets, quotes, or linked tweets that were available in the input. If native retweets are not available, say so briefly.\n\n` +
+  `## Notable Opinions\nConcise bullets of the user's apparent claims, preferences, concerns, or recommendations.\n\n` +
+  `## Chronological Highlights\nNewest-first or day-by-day bullets of the most important posts.\n\n` +
+  `## Sources\nList the tweet URLs and major external URLs used.\n\n` +
+  `---\n\nActivity input:\n\n${activityText}`;
+
+const piResult = spawnSync(
+  "pi",
+  ["--print", "--no-session", "--no-tools", "--provider", provider, "--model", model, "--thinking", thinking, "--system-prompt", systemPrompt, userPrompt],
+  { encoding: "utf8", maxBuffer: 20 * 1024 * 1024 }
+);
+
+if (piResult.status !== 0) {
+  console.error("❌  pi failed:\n" + piResult.stderr);
+  process.exit(1);
+}
+
+const summary = piResult.stdout.trim();
+
+// ─── Step 5: Output ─────────────────────────────────────────────────────────
+
+const header = `# @${handle} Activity Summary\n**Range:** last ${days} day(s), since ${since}\n**Generated:** ${new Date().toLocaleString()}\n\n`;
+const finalOutput = header + summary;
+
+const glowPath = spawnSync("which", ["glow"], { encoding: "utf8" }).stdout.trim();
+if (glowPath) {
+  const tmp = `/tmp/xuser-summary-${handle}-${Date.now()}.md`;
+  await Bun.write(tmp, finalOutput);
+  spawnSync("glow", [tmp], { stdio: "inherit" });
+  spawnSync("rm", [tmp]);
+} else {
+  console.log("\n" + cyan(bold("═══════════════════════════════════════════════════")));
+  console.log(finalOutput);
+  console.log(cyan(bold("═══════════════════════════════════════════════════")) + "\n");
+}
+
+if (outFile) {
+  await Bun.write(outFile, finalOutput);
+  console.log(green(`💾  Summary saved to: ${outFile}`));
+}

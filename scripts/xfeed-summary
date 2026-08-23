@@ -1,0 +1,277 @@
+#!/usr/bin/env bun
+/**
+ * xfeed-summary — Categorize and summarize your X/Twitter Following feed using twt + pi
+ *
+ * Uses https://github.com/yashiels/twitter-cli (`twt`) for X/Twitter access.
+ * Fetches the chronological Following feed, filters to the last N days, then asks pi
+ * to cluster signal/noise and recommend feed filters.
+ *
+ * Usage:
+ *   xfeed-summary [--days <n>] [--limit <n>] [--raw] [--out <file>]
+ */
+
+import { spawnSync } from "child_process";
+
+const args = process.argv.slice(2);
+
+if (args.includes("--help") || args.includes("-h")) {
+  console.log(`
+xfeed-summary — Categorize/summarize your X Following feed
+
+Usage:
+  xfeed-summary [options]
+
+Options:
+  --days <n>       Days to look back (default: 1)
+  --limit <n>      Max timeline items to fetch before date filtering (default: 300)
+  --provider <n>   pi provider to use (default: openai-codex)
+  --model <name>   pi model to use (default: gpt-5.4-mini)
+  --thinking <lvl> pi thinking level (default: low)
+  --raw            Print collected feed context before the summary
+  --out <file>     Save the summary to a file
+  -h, --help       Show this help
+
+Examples:
+  xfeed-summary
+  xfeed-summary --days 3 --limit 500 --out feed.md
+  xfeed-summary --raw
+`);
+  process.exit(0);
+}
+
+let days = 1;
+let fetchLimit = 300;
+let provider = "openai-codex";
+let model = "gpt-5.4-mini";
+let thinking = "low";
+let showRaw = false;
+let outFile = "";
+
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  if (arg === "--days" && args[i + 1]) {
+    const parsed = Number(args[++i]);
+    if (!Number.isInteger(parsed) || parsed <= 0) die("--days must be a positive integer.");
+    days = parsed;
+  } else if (arg === "--limit" && args[i + 1]) {
+    const parsed = Number(args[++i]);
+    if (!Number.isInteger(parsed) || parsed <= 0) die("--limit must be a positive integer.");
+    fetchLimit = parsed;
+  } else if (arg === "--provider" && args[i + 1]) {
+    provider = args[++i];
+  } else if (arg === "--model" && args[i + 1]) {
+    model = args[++i];
+  } else if (arg === "--thinking" && args[i + 1]) {
+    thinking = args[++i];
+  } else if (arg === "--raw") {
+    showRaw = true;
+  } else if (arg === "--out" && args[i + 1]) {
+    outFile = args[++i];
+  } else if (arg.startsWith("--")) {
+    die(`Unknown option: ${arg}`);
+  }
+}
+
+function color(code: number, text: string) { return `\x1b[${code}m${text}\x1b[0m`; }
+const bold = (s: string) => color(1, s);
+const dim = (s: string) => color(2, s);
+const cyan = (s: string) => color(36, s);
+const green = (s: string) => color(32, s);
+const yellow = (s: string) => color(33, s);
+
+function die(message: string): never {
+  console.error(`❌  ${message}`);
+  process.exit(1);
+}
+
+function runJson(command: string, commandArgs: string[]): any {
+  const r = spawnSync(command, commandArgs, { encoding: "utf8", maxBuffer: 50 * 1024 * 1024 });
+  if (r.error) throw new Error(`Could not run ${command}: ${r.error.message}`);
+  if (r.status !== 0) {
+    const stderr = r.stderr?.trim();
+    const stdout = r.stdout?.trim();
+    throw new Error(`${command} ${commandArgs.join(" ")} failed` + (stderr ? `\n${stderr}` : stdout ? `\n${stdout}` : ""));
+  }
+  const stdout = r.stdout.trim();
+  if (!stdout) return [];
+  try { return JSON.parse(stdout); }
+  catch { throw new Error(`Could not parse ${command} JSON response:\n${r.stdout}`); }
+}
+
+function twtJson(commandArgs: string[]): any {
+  return runJson("twt", ["--json", "--quiet", ...commandArgs]);
+}
+
+interface Tweet {
+  id: string;
+  text: string;
+  created_at: string;
+  author_handle: string;
+  url: string;
+  favorite_count: number;
+  retweet_count: number;
+  reply_count: number;
+  view_count: number;
+  is_retweet: boolean;
+  is_reply: boolean;
+}
+
+function normalizeTweet(t: any): Tweet | undefined {
+  const id = String(t?.id ?? "");
+  const text = String(t?.text ?? "");
+  if (!id || !text) return undefined;
+  const author = String(t?.author_handle ?? t?.authorHandle ?? "");
+  return {
+    id,
+    text,
+    created_at: String(t?.created_at ?? t?.createdAt ?? ""),
+    author_handle: author,
+    url: String(t?.url ?? (author ? `https://x.com/${author}/status/${id}` : `https://x.com/i/web/status/${id}`)),
+    favorite_count: Number(t?.favorite_count ?? t?.favoriteCount ?? t?.metrics?.likes ?? 0),
+    retweet_count: Number(t?.retweet_count ?? t?.retweetCount ?? t?.metrics?.retweets ?? 0),
+    reply_count: Number(t?.reply_count ?? t?.replyCount ?? t?.metrics?.replies ?? 0),
+    view_count: Number(t?.view_count ?? t?.viewCount ?? 0),
+    is_retweet: Boolean(t?.is_retweet ?? t?.isRetweet ?? false),
+    is_reply: Boolean(t?.is_reply ?? t?.isReply ?? false),
+  };
+}
+
+function normalizeTweetArray(payload: any): Tweet[] {
+  const list = Array.isArray(payload) ? payload : [payload];
+  return list.map(normalizeTweet).filter(Boolean) as Tweet[];
+}
+
+function dedupeTweets(list: Tweet[]): Tweet[] {
+  const seen = new Set<string>();
+  const out: Tweet[] = [];
+  for (const t of list) {
+    if (seen.has(t.id)) continue;
+    seen.add(t.id);
+    out.push(t);
+  }
+  return out;
+}
+
+function cutoffDate(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+function countByAuthor(tweets: Tweet[]): string {
+  const counts = new Map<string, number>();
+  for (const t of tweets) counts.set(t.author_handle || "unknown", (counts.get(t.author_handle || "unknown") ?? 0) + 1);
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 30)
+    .map(([author, count]) => `- @${author}: ${count}`)
+    .join("\n");
+}
+
+function renderTweet(t: Tweet, i: number): string {
+  const metrics = `❤️ ${t.favorite_count} · 🔁 ${t.retweet_count} · 💬 ${t.reply_count}`;
+  const flags = [t.is_retweet ? "retweet" : "post", t.is_reply ? "reply" : ""].filter(Boolean).join(", ");
+  return `[${i + 1}] @${t.author_handle || "unknown"} — ${t.created_at || "unknown date"} — ${flags}; ${metrics}\n${t.text}\nSource: ${t.url}`;
+}
+
+console.log(bold(`\n🔍  Fetching Following feed via twt (latest, limit ${fetchLimit})…`));
+
+let rawTweets: Tweet[] = [];
+try {
+  rawTweets = normalizeTweetArray(twtJson(["timeline", "--latest", "--limit", String(fetchLimit)]));
+} catch (e: any) {
+  die(`${e.message}\n\nInstall/authenticate yashiels/twitter-cli first: brew install yashiels/tap/twt && twt auth login`);
+}
+
+const cutoff = cutoffDate(days);
+const tweets = dedupeTweets(rawTweets)
+  .filter((t) => !t.created_at || new Date(t.created_at) >= cutoff)
+  .sort((a, b) => {
+    const at = new Date(a.created_at).getTime();
+    const bt = new Date(b.created_at).getTime();
+    return (Number.isFinite(at) ? at : 0) - (Number.isFinite(bt) ? bt : 0);
+  });
+
+if (tweets.length === 0) {
+  console.warn(yellow(`⚠️  No feed items found in the last ${days} day(s) from ${rawTweets.length} fetched items.`));
+  console.warn(yellow("   Try increasing --limit."));
+  process.exit(1);
+}
+
+console.log(green(`✅  Kept ${tweets.length} item(s) from the last ${days} day(s) (${rawTweets.length} fetched)`));
+
+const feedText = `# Following feed input\n\nRange: last ${days} day(s)\nFetched before date filtering: ${rawTweets.length}\nItems in range: ${tweets.length}\nCutoff: ${cutoff.toISOString()}\n\n## Caveats\n- Data source is twt timeline --latest. It reflects what X returns for the chronological Following feed.\n- The goal is not to summarize every message, but to identify signal/noise categories and actionable filters.\n- If the requested period has more items than --limit, older items may be missing. Increase --limit.\n\n## Top authors by volume\n${countByAuthor(tweets) || "(none)"}\n\n## Feed items, chronological\n\n${tweets.map(renderTweet).join("\n\n")}\n`;
+
+if (showRaw) {
+  console.log("\n" + bold("─── Collected Feed Context ──────────────────────"));
+  console.log(dim(feedText));
+  console.log(bold("────────────────────────────────────────────────\n"));
+}
+
+console.log(bold(`🤖  Categorizing and summarizing with pi (${provider}/${model}, thinking: ${thinking})…\n`));
+
+const systemPrompt =
+  "You are an expert daily briefing analyst and feed curator for an X/Twitter Following feed. " +
+  "Your first priority is to explain what important things happened in the feed. " +
+  "Your second priority is to reduce noise by recommending practical filters/mutes/lists. " +
+  "Do not summarize every post. Synthesize developments, patterns, and source-backed examples.";
+
+const preferenceProfile = `
+User preference profile:
+- Optimize for both engineering usefulness and AI market awareness.
+- Filter personal/humor posts aggressively.
+- Filter politics aggressively, except keep AI policy / open-source politics as a separate lane when substantive.
+- Prefer muting high-volume low-signal authors over merely isolating them into lists.
+- Do not keep only actionable posts, but create a separate section for actionable posts such as tools, benchmarks, code, deployments, launches, and implementation details.
+`.trim();
+
+const userPrompt =
+  `Analyze my X/Twitter Following feed over the last ${days} day(s).\n\n` +
+  `Primary goal: provide a useful briefing of what happened. Secondary goal: filter noise and recommend curation changes. Do not summarize every message; synthesize the important developments first, then group filtering advice separately.\n\n` +
+  `${preferenceProfile}\n\n` +
+  `Return exactly these Markdown sections:\n\n` +
+  `## TL;DR\n3–5 sentences: the most important things that happened, why they matter, and only a brief note on the biggest noise source.\n\n` +
+  `## What Happened\nA concise daily briefing of the important developments, launches, arguments, links, technical updates, and market/ecosystem signals. Group related posts together. Include source URLs for the most important examples.\n\n` +
+  `## High-Signal Items\nOnly the few most useful posts/threads/links for engineering usefulness or AI market awareness. Explain why each is worth attention. Include source URLs.\n\n` +
+  `## Actionable Posts\nTools, benchmarks, code, deployments, launches, implementation details, or things worth trying. Do not make this the only retained content; just isolate it clearly.\n\n` +
+  `## AI Market / Ecosystem Signals\nSummarize notable company/product/model/ecosystem movement, sentiment shifts, launches, adoption signals, or market-relevant commentary.\n\n` +
+  `## AI Policy / Open-Source Politics Lane\nKeep only substantive AI policy/open-source politics here. Filter generic politics/drama aggressively.\n\n` +
+  `## Curation & Filtering\nGroup all feed-cleanup advice here with these subsections:\n\n` +
+  `### Feed Categories\nA table with columns: Category, Keep/Maybe/Filter, Why, Example authors/tweets. Cluster similar messages into categories such as engineering substance, AI market awareness, AI policy/open-source politics, actionable posts, useful links, launches, personal/humor, engagement bait, repeated drama, general politics, meta-discussion, low-context replies, etc.\n\n` +
+  `### Noise Patterns\nCategories/authors/phrases/content types that consumed attention without much value. Be especially strict on personal/humor, generic politics, repeated drama, low-context replies, and engagement bait. Include examples, but avoid listing every tweet.\n\n` +
+  `### Recommended Filters\nConcrete actions: mute words/phrases, accounts to mute/unfollow, and categories to keep. Prefer muting high-volume low-signal authors when justified. Label each recommendation as Strong, Medium, or Experimental.\n\n` +
+  `### Suggested Lists\nPropose 2–5 X Lists or groups I could create from observed authors/categories, e.g. “AI engineering signal”, “AI market watch”, “AI policy / OSS governance”, “launches to scan weekly”.\n\n` +
+  `## Follow-up Questions\nAsk only 1–3 remaining questions if needed; do not repeat questions already answered by the preference profile.\n\n` +
+  `---\n\nFeed input:\n\n${feedText}`;
+
+const piResult = spawnSync(
+  "pi",
+  ["--print", "--no-session", "--no-tools", "--provider", provider, "--model", model, "--thinking", thinking, "--system-prompt", systemPrompt, userPrompt],
+  { encoding: "utf8", maxBuffer: 20 * 1024 * 1024 }
+);
+
+if (piResult.status !== 0) {
+  console.error("❌  pi failed:\n" + piResult.stderr);
+  process.exit(1);
+}
+
+const summary = piResult.stdout.trim();
+const header = `# Following Feed Summary\n**Range:** last ${days} day(s)\n**Generated:** ${new Date().toLocaleString()}\n**Items analyzed:** ${tweets.length} (${rawTweets.length} fetched)\n\n`;
+const finalOutput = header + summary;
+
+const glowPath = spawnSync("which", ["glow"], { encoding: "utf8" }).stdout.trim();
+if (glowPath) {
+  const tmp = `/tmp/xfeed-summary-${Date.now()}.md`;
+  await Bun.write(tmp, finalOutput);
+  spawnSync("glow", [tmp], { stdio: "inherit" });
+  spawnSync("rm", [tmp]);
+} else {
+  console.log("\n" + cyan(bold("═══════════════════════════════════════════════════")));
+  console.log(finalOutput);
+  console.log(cyan(bold("═══════════════════════════════════════════════════")) + "\n");
+}
+
+if (outFile) {
+  await Bun.write(outFile, finalOutput);
+  console.log(green(`💾  Summary saved to: ${outFile}`));
+}
