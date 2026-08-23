@@ -78,7 +78,6 @@ EXTERNAL_SKILLS=(
     "https://github.com/nicobailon/surf-cli/tree/main/skills/surf"
     "https://github.com/elithrar/dotfiles/tree/main/.agents/skills/web-perf"
     "https://github.com/danpeg/bug-hunt"
-    "https://github.com/openclaw/agent-skills/tree/main/skills/autoreview"
 )
 
 for skill in "${EXTERNAL_SKILLS[@]}"; do
