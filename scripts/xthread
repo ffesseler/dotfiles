@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
 /**
- * xthread — Summarize an X (Twitter) thread using xurl + pi
+ * xthread — Summarize an X (Twitter) thread using twt + pi
+ *
+ * Uses https://github.com/yashiels/twitter-cli (`twt`) for all X/Twitter access.
  *
  * Usage:
- *   xthread <tweet-id-or-url> [--app <xurl-app>] [--raw] [--out <file>]
+ *   xthread <tweet-id-or-url> [--limit <n>] [--raw] [--out <file>]
  */
 
 import { spawnSync } from "child_process";
@@ -20,28 +22,39 @@ Usage:
   xthread <tweet-id-or-url> [options]
 
 Options:
-  --app <name>   xurl app to use (default: your xurl default)
-  --raw          Print raw thread text before the summary
-  --out <file>   Save the summary to a file
-  -h, --help     Show this help
+  --limit <n>     Max tweets to fetch from the conversation search (default: 100)
+  --raw           Print raw thread text before the summary
+  --out <file>    Save the summary to a file
+  -h, --help      Show this help
 
 Examples:
   xthread 1234567890123456789
   xthread https://x.com/user/status/1234567890123456789
-  xthread 1234567890 --app my-app --out summary.md
+  xthread 1234567890 --limit 50 --out summary.md
 `);
   process.exit(0);
 }
 
 let threadIdOrUrl = "";
-let xurlApp = "";
 let showRaw = false;
 let outFile = "";
+let fetchLimit = 100;
 
 for (let i = 0; i < args.length; i++) {
-  if (args[i] === "--app" && args[i + 1])  { xurlApp = args[++i]; }
+  if (args[i] === "--limit" && args[i + 1]) {
+    const parsed = Number(args[++i]);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      console.error(`❌  --limit must be a positive integer.`);
+      process.exit(1);
+    }
+    fetchLimit = parsed;
+  }
   else if (args[i] === "--out" && args[i + 1]) { outFile = args[++i]; }
   else if (args[i] === "--raw")  { showRaw = true; }
+  else if (args[i] === "--app" || args[i] === "--twitter-cli") {
+    console.error(`❌  ${args[i]} is no longer supported. xthread now uses yashiels/twitter-cli (twt) only.`);
+    process.exit(1);
+  }
   else if (!args[i].startsWith("--")) { threadIdOrUrl = args[i]; }
 }
 
@@ -65,85 +78,132 @@ const cyan   = (s: string) => color(36, s);
 const green  = (s: string) => color(32, s);
 const yellow = (s: string) => color(33, s);
 
-function xurlGet(path: string): any {
-  const xurlArgs = xurlApp ? ["--app", xurlApp, path] : [path];
-  const r = spawnSync("xurl", xurlArgs, { encoding: "utf8" });
-  if (r.status !== 0) throw new Error(`xurl request failed for ${path}\n${r.stderr?.trim()}`);
+function runJson(command: string, commandArgs: string[]): any {
+  const r = spawnSync(command, commandArgs, {
+    encoding: "utf8",
+    maxBuffer: 20 * 1024 * 1024,
+  });
+
+  if (r.error) throw new Error(`Could not run ${command}: ${r.error.message}`);
+  if (r.status !== 0) {
+    const stderr = r.stderr?.trim();
+    const stdout = r.stdout?.trim();
+    throw new Error(`${command} ${commandArgs.join(" ")} failed` +
+      (stderr ? `\n${stderr}` : stdout ? `\n${stdout}` : ""));
+  }
+
   try { return JSON.parse(r.stdout); }
-  catch { throw new Error(`Could not parse xurl response:\n${r.stdout}`); }
+  catch { throw new Error(`Could not parse ${command} JSON response:\n${r.stdout}`); }
 }
 
-// ─── Step 1: Fetch root tweet ─────────────────────────────────────────────────
-
-console.log(bold("\n🔍  Fetching root tweet…"));
-
-const rootPath =
-  `/2/tweets/${tweetId}` +
-  `?tweet.fields=conversation_id,author_id,created_at,text,entities,public_metrics` +
-  `&expansions=author_id` +
-  `&user.fields=name,username`;
-
-let rootData: any;
-try { rootData = xurlGet(rootPath); }
-catch (e: any) { console.error(`❌  ${e.message}`); process.exit(1); }
-
-const rootTweet  = rootData.data;
-const rootAuthor = rootData.includes?.users?.[0];
-const conversationId = rootTweet?.conversation_id ?? tweetId;
-
-if (!rootTweet) {
-  console.error("❌  Could not retrieve the root tweet. Check the ID and your authentication.");
-  process.exit(1);
+function twtJson(commandArgs: string[]): any {
+  // --quiet keeps status/progress lines on stderr from cluttering wrapper output.
+  return runJson("twt", ["--json", "--quiet", ...commandArgs]);
 }
 
-// ─── Step 2: Fetch full thread ────────────────────────────────────────────────
+function extractHandleFromUrl(input: string): string | undefined {
+  return input.match(/(?:x|twitter)\.com\/([^/]+)\/status\/\d+/i)?.[1];
+}
 
-console.log(bold(`🧵  Fetching thread (conversation_id: ${conversationId})…`));
+function extractUrls(text: string): string[] {
+  return [...text.matchAll(/https?:\/\/[^\s)\]}>,"']+/g)]
+    .map((m) => m[0].replace(/[.,;:!?]+$/, ""));
+}
+
+// ─── Step 1: Fetch thread data via twt ───────────────────────────────────────
 
 interface Tweet {
   id: string;
   text: string;
   created_at: string;
-  author_id: string;
+  author_handle: string;
   public_metrics?: { like_count: number; retweet_count: number; reply_count: number; };
   entities?: { urls?: Array<{ url: string; expanded_url: string; display_url: string }> };
 }
-interface User { id: string; name: string; username: string; }
 
-const tweets: Tweet[] = [rootTweet];
-const usersMap: Record<string, User> = {};
-if (rootAuthor) usersMap[rootAuthor.id] = rootAuthor;
+function normalizeTweet(t: any): Tweet | undefined {
+  const id = String(t?.id ?? "");
+  const text = String(t?.text ?? "");
+  const authorHandle = String(t?.author_handle ?? t?.authorHandle ?? "");
+  if (!id || !text) return undefined;
 
-let nextToken: string | undefined;
-do {
-  const paging = nextToken ? `&next_token=${nextToken}` : "";
-  const searchPath =
-    `/2/tweets/search/recent` +
-    `?query=conversation_id:${conversationId}` +
-    `&tweet.fields=author_id,created_at,text,entities,public_metrics` +
-    `&expansions=author_id` +
-    `&user.fields=name,username` +
-    `&max_results=100` + paging;
+  const urls = extractUrls(text);
+  return {
+    id,
+    text,
+    created_at: String(t?.created_at ?? t?.createdAt ?? ""),
+    author_handle: authorHandle,
+    public_metrics: {
+      like_count: Number(t?.favorite_count ?? t?.favoriteCount ?? t?.metrics?.likes ?? 0),
+      retweet_count: Number(t?.retweet_count ?? t?.retweetCount ?? t?.metrics?.retweets ?? 0),
+      reply_count: Number(t?.reply_count ?? t?.replyCount ?? t?.metrics?.replies ?? 0),
+    },
+    entities: urls.length > 0
+      ? { urls: urls.map((u: string) => ({ url: u, expanded_url: u, display_url: u })) }
+      : undefined,
+  };
+}
 
-  let page: any;
-  try { page = xurlGet(searchPath); }
-  catch (e: any) {
-    console.warn(yellow(`⚠️  Could not fetch full conversation: ${e.message}`));
-    console.warn(yellow("   Summarising the root tweet only."));
-    break;
+function normalizeTweetArray(payload: any): Tweet[] {
+  const list = Array.isArray(payload) ? payload : [payload];
+  return list.map(normalizeTweet).filter(Boolean) as Tweet[];
+}
+
+function dedupeTweets(list: Tweet[]): Tweet[] {
+  const seen = new Set<string>();
+  const out: Tweet[] = [];
+  for (const t of list) {
+    if (seen.has(t.id)) continue;
+    seen.add(t.id);
+    out.push(t);
   }
+  return out;
+}
 
-  for (const u of page.includes?.users ?? []) usersMap[u.id] = u;
-  for (const t of (page.data ?? []) as Tweet[]) {
-    if (t.id !== tweetId) tweets.push(t);
-  }
-  nextToken = page.meta?.next_token;
-} while (nextToken);
+console.log(bold("\n🔍  Fetching root tweet via twt…"));
 
-tweets.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+let rootTweet: Tweet | undefined;
+try {
+  rootTweet = normalizeTweetArray(twtJson(["tweet", tweetId]))[0];
+} catch (e: any) {
+  console.error(`❌  ${e.message}`);
+  console.error("\nInstall/authenticate yashiels/twitter-cli first: brew install yashiels/tap/twt && twt auth login");
+  process.exit(1);
+}
+
+if (!rootTweet) {
+  console.error("❌  Could not retrieve the root tweet. Check the ID and your twt authentication.");
+  process.exit(1);
+}
+
+const urlHandle = extractHandleFromUrl(threadIdOrUrl);
+if (!rootTweet.author_handle && urlHandle) rootTweet.author_handle = urlHandle;
+
+console.log(bold(`🧵  Searching conversation via twt (conversation_id:${tweetId}, limit ${fetchLimit})…`));
+
+let tweets: Tweet[] = [rootTweet];
+try {
+  // twt/Twitter search can return empty non-JSON output for very small counts,
+  // so ask for at least 5 and trim locally to honor --limit.
+  const twtSearchLimit = Math.max(fetchLimit, 5);
+  const found = normalizeTweetArray(twtJson(["search", `conversation_id:${tweetId}`, "--limit", String(twtSearchLimit)]));
+  tweets = dedupeTweets([rootTweet, ...found]).slice(0, fetchLimit);
+} catch (e: any) {
+  console.warn(yellow(`⚠️  Could not fetch full conversation with twt search: ${e.message}`));
+  console.warn(yellow("   Summarising the root tweet only."));
+}
+
+// yashiels/twitter-cli currently exposes tweet IDs/handles/counts, but not Twitter's
+// v2 conversation_id field. As a result, the provided tweet ID is used as the
+// conversation root for search; pass the first tweet in a thread for best results.
+tweets.sort((a, b) => {
+  const at = new Date(a.created_at).getTime();
+  const bt = new Date(b.created_at).getTime();
+  return (Number.isFinite(at) ? at : 0) - (Number.isFinite(bt) ? bt : 0);
+});
 console.log(green(`✅  Retrieved ${tweets.length} tweet(s)`));
 
-// ─── Step 3: Collect external URLs ───────────────────────────────────────────
+// ─── Step 2: Collect external URLs ───────────────────────────────────────────
 
 const seenUrls = new Set<string>();
 const allUrls: string[] = [];
@@ -159,38 +219,30 @@ for (const t of tweets) {
   }
 }
 
-// ─── Step 4: Build structured thread text ────────────────────────────────────
+// ─── Step 3: Build structured thread text ────────────────────────────────────
 
-const threadAuthorId = rootTweet.author_id;
+const threadAuthorHandle = rootTweet.author_handle || urlHandle || "unknown";
 
-function label(authorId: string): string {
-  const u = usersMap[authorId];
-  return u ? `@${u.username} (${u.name})` : `[user:${authorId}]`;
+function label(authorHandle: string): string {
+  return authorHandle ? `@${authorHandle}` : "[unknown user]";
 }
 
-function expandUrls(text: string, entities?: Tweet["entities"]): string {
-  if (!entities?.urls) return text;
-  let out = text;
-  for (const u of entities.urls) out = out.replaceAll(u.url, u.expanded_url ?? u.display_url ?? u.url);
-  return out;
-}
-
-const authorTweets = tweets.filter(t => t.author_id === threadAuthorId);
+const authorTweets = tweets.filter(t => t.author_handle === threadAuthorHandle || (t.id === rootTweet.id && !t.author_handle));
 const replyTweets  = tweets
-  .filter(t => t.author_id !== threadAuthorId)
+  .filter(t => !(t.author_handle === threadAuthorHandle || (t.id === rootTweet.id && !t.author_handle)))
   .sort((a, b) => (b.public_metrics?.like_count ?? 0) - (a.public_metrics?.like_count ?? 0));
 
 function renderTweets(list: Tweet[], heading: string): string {
   if (list.length === 0) return `### ${heading}\n(none)`;
   return `### ${heading}\n` + list.map((t, i) => {
-    const body    = expandUrls(t.text, t.entities);
-    const likes   = t.public_metrics?.like_count ?? 0;
-    return `[${i + 1}] ${label(t.author_id)} — ❤️ ${likes}\n${body}`;
+    const likes = t.public_metrics?.like_count ?? 0;
+    const posted = t.created_at || "unknown date";
+    return `[${i + 1}] ${label(t.author_handle)} — ${posted} — ❤️ ${likes}\n${t.text}`;
   }).join("\n\n");
 }
 
 const threadText =
-  `## THREAD AUTHOR: ${label(threadAuthorId)} (${authorTweets.length} post(s))\n\n` +
+  `## THREAD AUTHOR: ${label(threadAuthorHandle)} (${authorTweets.length} post(s))\n\n` +
   renderTweets(authorTweets, "Author's posts") +
   `\n\n## REPLIES FROM OTHERS (${replyTweets.length} post(s), sorted by likes)\n\n` +
   renderTweets(replyTweets, "Replies");
@@ -201,7 +253,7 @@ const urlSection = allUrls.length > 0
 
 const fullThreadText = threadText + urlSection;
 
-// ─── Step 5: Print raw thread (optional) ─────────────────────────────────────
+// ─── Step 4: Print raw thread (optional) ─────────────────────────────────────
 
 if (showRaw) {
   console.log("\n" + bold("─── Raw Thread ─────────────────────────────────"));
@@ -209,7 +261,7 @@ if (showRaw) {
   console.log(bold("────────────────────────────────────────────────\n"));
 }
 
-// ─── Step 6: Summarize with pi ────────────────────────────────────────────────
+// ─── Step 5: Summarize with pi ────────────────────────────────────────────────
 
 console.log(bold("🤖  Summarizing with pi (gemini-3.1-flash-lite-preview)…\n"));
 
@@ -257,10 +309,10 @@ if (piResult.status !== 0) {
 
 const summary = piResult.stdout.trim();
 
-// ─── Step 7: Output ───────────────────────────────────────────────────────────
+// ─── Step 6: Output ───────────────────────────────────────────────────────────
 
-const threadUrl = rootAuthor
-  ? `https://x.com/${rootAuthor.username}/status/${tweetId}`
+const threadUrl = rootTweet.author_handle
+  ? `https://x.com/${rootTweet.author_handle}/status/${tweetId}`
   : `https://x.com/i/web/status/${tweetId}`;
 
 const header = `# Thread Summary\n**URL:** ${threadUrl}\n**Generated:** ${new Date().toLocaleString()}\n\n`;
