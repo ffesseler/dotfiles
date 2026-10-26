@@ -23,6 +23,7 @@ Plan file: {{PLAN_PATH}}
 Step to implement: Step {{STEP_NUMBER}} — {{STEP_TITLE}}
 Autonomy mode: {{AUTONOMY}}   (substep | step | full)
 Detailed-planning reference: {{DETAILED_PLANNING_PATH}}
+Simplify-plan reference: {{SIMPLIFY_PLAN_SKILL_PATH}}
 Commit-message reference: {{COMMIT_MESSAGE_SKILL_PATH}}
 
 ## 1. Prepare
@@ -35,9 +36,11 @@ Commit-message reference: {{COMMIT_MESSAGE_SKILL_PATH}}
   objective, scope/non-goals, exact files to change, decisions/contracts, validation,
   and cohesive substeps where each substep is independently testable and tests live
   with implementation.
+- If `{{SIMPLIFY_PLAN_SKILL_PATH}}` is not `unavailable`, read that file for how to run the
+  automatic simplification pass on the detailed plan before coding.
 - Read the relevant code before planning.
 
-## 2. Detailed plan (mandatory, before any code)
+## 2. Detailed plan & automatic simplification (mandatory, before any code)
 
 - Write the detailed plan to `plans/step-{{NN}}-detailed-plan.md` (zero-padded step
   number, next to the plan file). Include: parent-plan reference, objective, scope,
@@ -48,11 +51,29 @@ Commit-message reference: {{COMMIT_MESSAGE_SKILL_PATH}}
 - Treat every numbered substep in this detailed plan as a mandatory execution and commit
   boundary. Do not later merge several planned substeps into one implementation batch or
   one commit unless the user explicitly approves changing the detailed plan first.
+
+### Automatic simplification pass (before starting substeps)
+- Immediately after writing the detailed plan, automatically run a simplification pass
+  following the `simplify-implementation-plan` skill (`{{SIMPLIFY_PLAN_SKILL_PATH}}`)
+  before starting any detailed substeps:
+  1. Remove speculative generality (YAGNI) — omit unrequested capabilities, single-use
+     abstractions, or premature extension points.
+  2. Simplify the data model — keep one canonical representation, avoid redundant
+     projections or parallel collections.
+  3. Centralize responsibilities — give shared non-domain behavior one owner at the
+     nearest common boundary.
+  4. Remove technical plumbing — eliminate behaviorless wrappers, mechanical delegation,
+     or unnecessary intermediate encoding/decoding.
+  5. Simplify operations — match actual deployment modes without unneeded coexistence layers.
+  6. Simplify tests & presentation — keep high-value tests and proportional fixtures.
+- Update `plans/step-{{NN}}-detailed-plan.md` in-place with the simplified scope and substeps.
+  Document what was simplified, what was preserved, and any trade-offs.
 - Then:
-  - If autonomy is `substep` or `step`: STOP and return the detailed plan summary for
-    validation. Do not write code yet. You will be resumed with approval or
-    adjustments.
-  - If autonomy is `full`: proceed directly.
+  - If autonomy is `substep` or `step`: STOP and return the simplified detailed plan summary
+    and simplification notes for validation. Do not write code yet. You will be resumed with
+    approval or adjustments.
+  - If autonomy is `full`: the user does NOT validate the simplified plan. Do NOT stop and do
+    NOT ask for validation; proceed directly to implement the simplified substeps.
 
 ## 3. Implement, one substep at a time
 
@@ -62,7 +83,8 @@ all autonomy modes:
 - `substep` autonomy: implement exactly one substep, commit it, report, then STOP.
 - `step` autonomy: after approval, implement all substeps without user checkpoints, but
   still make exactly one focused commit after each substep before starting the next.
-- `full` autonomy: same as `step`, except the detailed plan was not pre-approved.
+- `full` autonomy: zero user checkpoints (neither the detailed plan nor the simplified plan
+  is submitted for user validation); implement all substeps with one commit per substep.
 
 For each substep, in order:
 - Announce internally which substep you are starting and verify the working tree only
@@ -80,13 +102,21 @@ For each substep, in order:
     style from recent `git log --oneline` subjects and use a clear imperative subject
     plus body when helpful.
   - Do not include step numbers, substep numbers, finding numbers, or pipeline
-    bookkeeping in the commit subject/body unless the user explicitly asks for that.
-    The orchestrator maps commits to substeps in the execution log, not in git history.
+    bookkeeping in the commit subject/body. Commit messages must state ONLY what the
+    code changes themselves are, not their origin or administrative process (e.g. never
+    state that a commit comes from a review or addresses review findings). Planning
+    organization must never leak into git commit messages.
   - After the commit, run `git status --short` and confirm no unintended files remain
     before starting the next substep.
   - NEVER push. NEVER amend or rebase existing commits.
 - If you realize two planned substeps cannot be separated into focused commits, STOP
   with `STATUS: blocked` and explain why. Do not silently batch them.
+- When resumed to address review findings:
+  - Implement each accepted finding independently with its own tests/validation.
+  - Make exactly one focused commit per review finding (never batch multiple findings into one commit).
+  - The commit message must describe solely the technical changes themselves, never stating
+    that they come from a review, and never referencing step numbers, finding numbers, or
+    planning organization.
 - Then:
   - If autonomy is `substep`: STOP and return a report for this substep (see format
     below). You will be resumed with "continue" or with adjustment requests.
@@ -110,9 +140,13 @@ Return exactly:
 - Never modify the plan file or the execution log — the orchestrator owns them.
 - Never collapse multiple detailed-plan substeps into one commit. One planned substep =
   one focused commit, unless the user explicitly changes the detailed plan.
+- Always run the automatic simplification pass following the simplify-plan reference
+  after drafting the detailed plan and before starting substep implementation.
+- When resumed with review findings: make exactly one focused commit per finding (no batching).
 - Keep git commit messages focused on the code change itself, following the
   commit-message reference when available; do not use commit messages for pipeline
-  traceability.
+  traceability. Never state that a commit comes from a review, and never reference step
+  numbers, substep numbers, finding numbers, or planning organization in commit messages.
 - Never touch code outside the step's scope; if the step is impossible as written,
   return STATUS: blocked with an explanation instead of improvising.
 - If a previous step's contract (DTO, table, route) doesn't match what the plan says,

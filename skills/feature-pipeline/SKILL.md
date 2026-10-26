@@ -16,9 +16,9 @@ high-level plan (already written, user-reviewed)
   ├─ PHASE critique : fresh-context external review of the plan → triage → integrate
   │
   ├─ PHASE execute  : for each step
-  │     1. spawn fresh-context step agent → detailed plan → (validation) → implement
+  │     1. spawn fresh-context step agent → detailed plan → simplification pass (/simplify-implementation-plan) → (validation) → implement
   │     2. one commit per substep (commit-message conventions, targeted staging)
-  │     3. cross-model review of the step's commits vs the plan → triage → fixes
+  │     3. cross-model review of the step's commits vs the plan → triage → fixes (one commit per finding)
   │     4. mark step done + append execution log entry
   │
   └─ PHASE done     : final summary
@@ -59,9 +59,9 @@ pipeline:
 ```
 
 - `autonomy`
-  - `substep`: user validates the detailed plan, then each substep after its commit.
-  - `step`: user validates the detailed plan, then the whole step after its cross-review.
-  - `full`: no user checkpoints; reviews are auto-triaged; report at the end.
+  - `substep`: user validates the simplified detailed plan, then each substep after its commit.
+  - `step`: user validates the simplified detailed plan, then the whole step after its cross-review.
+  - `full`: zero user checkpoints (the agent drafts and simplifies the detailed plan, then immediately implements all substeps without asking for plan validation; reviews are auto-triaged; report at the end).
 - `triage` (applies to both review phases)
   - `interactive`: classify findings and let the user pick what to integrate.
   - `auto`: integrate `blocking` + `major` findings, log discarded ones with reasons.
@@ -98,6 +98,11 @@ references before spawning the step agent:
   and project locations (`~/.claude/skills`, `~/.pi/agent/skills`, `.pi/skills`,
   `.pi/agent/skills`, `.agents/skills`). If none exists, pass `unavailable` and let the
   step prompt's fallback rules apply.
+- `SIMPLIFY_PLAN_SKILL_PATH`: first existing `simplify-implementation-plan/SKILL.md` from
+  installed skills, using the same sibling/global/project search order
+  (`$FEATURE_PIPELINE_SKILL_DIR/../simplify-implementation-plan/SKILL.md`, `~/.claude/skills`,
+  `~/.pi/agent/skills`, `.pi/skills`, `.pi/agent/skills`, `.agents/skills`). If none
+  exists, pass `unavailable`.
 - `COMMIT_MESSAGE_SKILL_PATH`: first existing `commit-message/SKILL.md` from installed
   skills, using the same sibling/global/project search order. If none exists, pass
   `unavailable` and use the repository's commit style from recent `git log` subjects.
@@ -148,9 +153,9 @@ step:
 ### 2. Spawn the step agent (fresh context)
 
 - Read `references/step-agent-prompt.md`, fill the template (step number/title,
-  autonomy, paths, `FEATURE_PIPELINE_SKILL_DIR`, `DETAILED_PLANNING_PATH`, and
-  `COMMIT_MESSAGE_SKILL_PATH`). One agent per step; a new step always gets a new
-  fresh-context agent.
+  autonomy, paths, `FEATURE_PIPELINE_SKILL_DIR`, `DETAILED_PLANNING_PATH`,
+  `SIMPLIFY_PLAN_SKILL_PATH`, and `COMMIT_MESSAGE_SKILL_PATH`). One agent per step; a
+  new step always gets a new fresh-context agent.
 - Runtime adapter:
   - **Claude Code**: spawn `general-purpose` with the Agent tool. Continue the same
     child with SendMessage for approvals, adjustments, substep continuation, and review
@@ -166,14 +171,24 @@ step:
     following the filled step prompt yourself. State stays in the plan file; recommend
     the user restart a fresh session between steps and re-invoke the pipeline (resume
     handles the rest).
-- The agent first produces `plans/step-NN-detailed-plan.md` and, unless `autonomy:
-  full`, returns for validation. Relay the detailed plan summary to the user. Before
-  approval, explicitly verify that any numbered substeps are understood as commit
-  boundaries: **one detailed-plan substep = one focused commit**.
-- On approval, continue the SAME child using the runtime's continuation primitive with
-  an explicit instruction such as: "approved, implement exactly substep-by-substep; make
-  one focused commit per numbered substep before starting the next; do not batch
-  substeps into one commit". On adjustments, relay them and re-validate.
+- The agent first produces `plans/step-NN-detailed-plan.md`.
+- **Automatic simplification pass**: immediately after drafting the detailed plan, the
+  agent automatically runs the `/simplify-implementation-plan` skill (`SIMPLIFY_PLAN_SKILL_PATH`)
+  before starting any detailed substeps. It reviews the detailed plan against the 6
+  simplification categories (YAGNI, data model, responsibility centralization, technical
+  plumbing removal, operational simplicity, test proportionality), rewrites
+  `plans/step-NN-detailed-plan.md` in-place with the simplified scope and substeps, and
+  notes what was simplified.
+- In `substep` or `step` autonomy: the agent returns the simplified detailed plan summary
+  (and simplification notes) for user validation before writing code. Relay the summary to the user.
+  Before approval, explicitly verify that any numbered substeps are understood as commit
+  boundaries: **one detailed-plan substep = one focused commit**. On approval, continue the
+  SAME child using the runtime's continuation primitive with an explicit instruction such as:
+  "approved, implement exactly substep-by-substep; make one focused commit per numbered substep
+  before starting the next; do not batch substeps into one commit". On adjustments, relay them and re-validate.
+- In `full` autonomy: **the user does NOT validate the simplified plan**. The agent does NOT pause
+  for user approval; it runs the simplification pass on `plans/step-NN-detailed-plan.md` and immediately
+  proceeds directly to implement all substeps without any user checkpoint.
 - In `substep` autonomy: each time the child returns a substep report, verify that the
   reported commit corresponds to that substep, relay it (commits, changes, validation)
   and ask the user to validate; then continue the same child with "continue" (or the
@@ -197,13 +212,15 @@ step:
   `--stat`, and the diff per the template's size rule) and run `"$FRESH_REVIEW"` with
   the configured engine, saving to `plans/reviews/<plan-slug>-step-NN-review-<ts>.md`.
 - Run **Triage**. For accepted findings: continue the same step child using the
-  runtime's continuation primitive and ask it to fix all accepted findings from that
-  review in one focused review-fix commit, unless the accepted findings are unrelated
-  enough that one commit would violate the commit-message skill's "one logical change"
-  rule. The fix commit must use the commit-message reference when available, and its
-  subject/body must describe the code change itself, not the step number, finding
-  number, or pipeline bookkeeping. Re-run validation; no second cross-review unless the
-  user asks.
+  runtime's continuation primitive. Instruct it to implement accepted findings with
+  **one focused commit per review finding** (never batch multiple findings into a single
+  commit). Each commit must follow the commit-message reference when available.
+  Commit messages must state **only what the code changes themselves are, not their origin**:
+  - Never state that the commit comes from a review or addresses review findings/comments
+    (e.g. do NOT use "Address review findings...", "Fix review comments...", etc.).
+  - Never reference step numbers, finding numbers, or pipeline/planning bookkeeping.
+  - Planning organization must never leak into git commit messages.
+  Re-run validation after fixes; no second cross-review unless the user asks.
 
 ### 4. Close the step
 
