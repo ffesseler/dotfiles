@@ -92,6 +92,32 @@ Plans should be scannable and lightweight:
 - Target 1-2 short sentences plus 3-5 bullets per step
 - Keep the full plan concise for fast review and iteration
 
+### Preserve Settled Technical Design
+
+Filtering implementation detail must not erase an architectural solution that has already been discussed or agreed upon. Preserve the technical design decisions an executor needs in order to build the intended system rather than merely reproduce its visible behavior.
+
+Capture constraints such as:
+- Component or module boundaries and the role each one owns
+- Shared interfaces, ports, normalized result shapes, and provider abstractions
+- Where orchestration, selection policy, retries, persistence, billing, and error classification belong
+- Important invariants across storage, security, privacy, observability, and timeout budgets
+- Explicit technology or integration choices when they are part of the accepted design
+- Naming or extension constraints that prevent the implementation from collapsing into an unintended structure
+
+Do not expand these into class internals, pseudocode, method-by-method instructions, or incidental library options. State the boundary and its reason compactly. For example:
+
+```markdown
+## Technical Design Constraints
+
+- `VoiceService` remains the orchestration boundary for storage, fallback, and usage accounting.
+- Provider-specific clients implement one transcription contract and normalize their responses to `{ text, audioSeconds, model }`.
+- A provider policy resolves the environment default and user override; controllers and clients do not select providers themselves.
+- Provider clients classify format refusals, while the orchestrator owns the single retry.
+- Log provider, model, latency, and fallback use, but never transcript contents.
+```
+
+If no technical design has been established, do not invent one merely to fill this section. If the conversation contains competing designs that remain unresolved, record the decision as open rather than silently choosing.
+
 ### Plan Structure
 
 Before writing increments, include a short orientation section and code pointers so the future executor starts with the right mental model and the right files.
@@ -125,9 +151,10 @@ Example:
 
 1. Overview - Clear problem/goal/approach context (2-5 concise bullets or sentences)
 2. Code Pointers - Important files, modules, tests, and docs to inspect before executing
-3. Functional Increments - Numbered steps with Objective/Actions/Result/Validation
-4. Key Decisions - Important choices made during planning
-5. Checklist - Summary of all steps
+3. Technical Design Constraints - Include when the conversation or investigation established architectural boundaries, contracts, responsibilities, or invariants
+4. Functional Increments - Numbered steps with Objective/Actions/Result/Validation
+5. Key Decisions - Important choices made during planning
+6. Checklist - Summary of all steps
 
 ### Overview Template
 
@@ -341,6 +368,8 @@ Provide a scannable summary:
 Before finalizing a plan, verify:
 - The opening context clearly states the problem, desired outcome, and high-level approach
 - Code Pointers names the most important files/tests/docs an executor should inspect first
+- Settled architectural boundaries, shared contracts, responsibility ownership, and operational invariants from the discussion are preserved
+- The plan removes low-level mechanics without reducing an agreed technical design to behavior alone
 - Each increment prioritizes automated validation when realistic, with manual checks as a complement
 - Each increment is independently testable by a user
 - Step order minimizes blocking dependencies
@@ -377,6 +406,20 @@ Instead, organize by user capability:
 ```markdown
 Step 1: User can view items (includes DB, API, UI)
 Step 2: User can search items
+```
+
+### Filtering Out the Architecture
+
+Don't turn an agreed component design into behavior-only wording:
+```markdown
+**Action**: Add support for a second provider and retry rejected files
+```
+
+Instead, preserve the essential ownership and contract while leaving internals for execution:
+```markdown
+**Technical Design Constraints**:
+- Separate provider clients share one normalized contract
+- The selection policy chooses the provider; the orchestrator owns retry behavior
 ```
 
 ### Tests as a Separate Step
@@ -416,12 +459,13 @@ Instead, be concise:
 2. **Inspect the codebase** - Identify the files, tests, docs, and patterns most relevant to the plan
 3. **Write the opening context** - State the problem, goal, high-level approach, and scope in user-readable language
 4. **Add Code Pointers** - List concrete files with a brief reason each
-5. **Identify functional increments** - What can user test at each step?
-6. **Add diagrams when needed** - Visualize complex flows only
-7. **Document decisions** - Capture important choices made
-8. **Create checklist** - Summary for quick reference
-9. **Run quality gate** - Ensure increments are testable and plan is executable
-10. **Iterate with user** - Refine plan before implementation
+5. **Preserve technical design** - Extract settled boundaries, contracts, responsibility ownership, and invariants without expanding into implementation mechanics
+6. **Identify functional increments** - What can user test at each step?
+7. **Add diagrams when needed** - Visualize complex flows only
+8. **Document decisions** - Capture important choices made
+9. **Create checklist** - Summary for quick reference
+10. **Run quality gate** - Ensure increments are testable and plan is executable
+11. **Iterate with user** - Refine plan before implementation
 
 ## Example Plan
 
